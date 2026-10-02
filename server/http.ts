@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 import type { z } from 'zod'
 
-type Status = 400 | 403 | 404 | 422 | 429 | 500 | 502 | 503
+type Status = 400 | 401 | 403 | 404 | 422 | 429 | 500 | 502 | 503
 
 export class HttpError extends Error {
   status: Status

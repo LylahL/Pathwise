@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -E 's/=.*/=…\\(hidden\\)/')",
+      "Bash(curl -s localhost:8787/api/auth/me)"
+    ]
+  }
+}

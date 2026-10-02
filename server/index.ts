@@ -2,6 +2,7 @@ import { aiConfig, config } from './config'
 import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { ZodError } from 'zod'
+import { auth, authEnabled, requireSession } from './auth'
 import { seedIfEmpty } from './db/seed'
 import { HttpError } from './http'
 import { analyze } from './routes/analyze'
@@ -14,8 +15,10 @@ export const app = new Hono()
 app.get('/api/health', (c) => {
   const { provider, model, configured } = aiConfig()
   // Reports only whether a key is present, never the key itself.
-  return c.json({ ok: true, ai: { provider, model, configured } })
+  return c.json({ ok: true, auth: authEnabled(), ai: { provider, model, configured } })
 })
+app.use('/api/*', requireSession)
+app.route('/api', auth)
 app.route('/api', analyze)
 app.route('/api', data)
 
@@ -31,6 +34,7 @@ if (process.env.PATHWISE_NO_LISTEN !== '1') {
   serve({ fetch: app.fetch, port: config.port }, (i) => {
     const ai = aiConfig()
     console.log(`Pathwise API on http://localhost:${i.port} (AI: ${ai.provider}/${ai.model}, db ${config.dbPath})`)
+    console.log(authEnabled() ? 'Google sign-in: ON' : 'Google sign-in: off (set GOOGLE_CLIENT_ID to require login)')
     if (!ai.configured) console.log(`${ai.keyVar} not set: /api/analyze-candidate will return 503 and the app will use its rules-based fallback.`)
   })
 }

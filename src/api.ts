@@ -3,6 +3,7 @@ import type { Experiment, Skill } from './model'
 
 const BASE = import.meta.env.VITE_API_BASE as string | undefined
 export const apiEnabled = Boolean(BASE)
+export const API_BASE = BASE
 
 async function call<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
@@ -10,6 +11,8 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
     headers: body === undefined ? undefined : { 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   })
+  // An expired or missing session: tell the auth layer so it can show the login screen.
+  if (res.status === 401) window.dispatchEvent(new Event('pathwise:unauthorized'))
   if (!res.ok) throw new Error(`${method} ${path} failed (${res.status})`)
   return res.json() as Promise<T>
 }

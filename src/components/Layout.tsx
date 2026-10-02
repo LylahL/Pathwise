@@ -1,5 +1,6 @@
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { Beaker, BriefcaseBusiness, Compass, Crosshair, LayoutDashboard, ListChecks, Target, UserRound } from 'lucide-react'
+import { useAuth } from '../auth'
 import { useApp } from '../store'
 import ErrorBoundary from './ErrorBoundary'
 import { cx } from './ui'
@@ -20,6 +21,7 @@ const Logo = () => <div className="grid h-7 w-7 place-items-center rounded-lg bg
 export default function Layout() {
   const { profile, modified, resetDemo, apiStatus } = useApp()
   const { pathname } = useLocation()
+  const { user, signOut } = useAuth()
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
       <aside className="hidden h-screen w-56 shrink-0 flex-col border-r border-zinc-200/80 bg-white px-3 py-4 lg:sticky lg:top-0 lg:flex">
@@ -55,6 +57,12 @@ export default function Layout() {
             {apiStatus === 'online' ? 'Changes saved to backend' : apiStatus === 'offline' ? 'Backend offline — changes won’t persist' : 'Connecting to backend…'}
           </div>
         )}
+        {user && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-zinc-50 px-2 py-2 text-[11px]">
+            {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-6 w-6 rounded-full" /> : <span className="grid h-6 w-6 place-items-center rounded-full bg-zinc-200 text-[10px] font-semibold">{user.name[0]}</span>}
+            <div className="min-w-0 flex-1"><div className="truncate font-medium text-zinc-800">{user.email}</div><button onClick={() => void signOut()} className="cursor-pointer text-zinc-500 underline hover:text-zinc-800">Sign out</button></div>
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2 px-2">
           <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-[11px] font-semibold text-indigo-700">{profile.name.split(' ').map((s) => s[0]).join('')}</div>
           <div className="min-w-0 text-xs">
@@ -69,6 +77,7 @@ export default function Layout() {
           <Logo />
           <span className="text-sm font-semibold tracking-tight">Pathwise</span>
           <span className="ml-auto rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Demo data</span>
+          {user && <button onClick={() => void signOut()} className="cursor-pointer text-[11px] text-zinc-500 underline">Sign out</button>}
         </div>
         <nav className="flex gap-1 overflow-x-auto px-3 py-2" aria-label="Primary">
           {nav.map(({ to, label }) => (

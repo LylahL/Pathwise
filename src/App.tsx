@@ -1,4 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AuthGate } from './auth'
 import { StoreProvider } from './store'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
@@ -12,6 +13,7 @@ import JobStrategy from './pages/JobStrategy'
 
 export default function App() {
   return (
+    <AuthGate>
     <StoreProvider>
       <BrowserRouter>
         <Routes>
@@ -29,5 +31,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </StoreProvider>
+    </AuthGate>
   )
 }
