@@ -9,7 +9,8 @@ export interface AnalysisResult {
   fallbackReason?: string
 }
 
-const DEFAULT_TIMEOUT_MS = 15_000
+// Real model calls take 10-40s (and the server may try a second model), so allow for that before falling back.
+const DEFAULT_TIMEOUT_MS = 70_000
 
 async function callEndpoint(url: string, input: unknown, paths: CareerPath[], timeoutMs: number): Promise<CandidateAnalysis> {
   const ctl = new AbortController()

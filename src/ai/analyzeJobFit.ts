@@ -8,7 +8,7 @@ export interface JobFitResult {
   fallbackReason?: string
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000
+const DEFAULT_TIMEOUT_MS = 70_000
 
 async function callBackend(url: string, input: unknown, timeoutMs: number): Promise<JobFitAnalysis> {
   const ctl = new AbortController()

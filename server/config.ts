@@ -1,7 +1,8 @@
 import { existsSync } from 'node:fs'
 
 // Load .env files (existing environment variables win). Import this module first.
-for (const f of ['.env.local', '.env']) if (existsSync(f)) process.loadEnvFile(f)
+// PATHWISE_NO_ENV_FILE=1 skips them so tests can never pick up a real key.
+if (process.env.PATHWISE_NO_ENV_FILE !== '1') for (const f of ['.env.local', '.env']) if (existsSync(f)) process.loadEnvFile(f)
 
 export type ProviderName = 'gemini' | 'anthropic'
 
@@ -25,7 +26,7 @@ export function aiConfig() {
     : 'gemini'
   return {
     provider,
-    model: provider === 'gemini' ? (process.env.GEMINI_MODEL ?? 'gemini-2.5-flash') : (process.env.ANTHROPIC_MODEL ?? 'claude-opus-5-5'),
+    model: provider === 'gemini' ? (process.env.GEMINI_MODEL ?? 'gemini-3.5-flash-lite,gemini-3.5-flash,gemini-3.1-flash-lite') : (process.env.ANTHROPIC_MODEL ?? 'claude-opus-5-5'),
     configured: provider === 'gemini' ? has('GEMINI_API_KEY', 'GOOGLE_API_KEY') : has('ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN'),
     keyVar: provider === 'gemini' ? 'GEMINI_API_KEY' : 'ANTHROPIC_API_KEY',
   }

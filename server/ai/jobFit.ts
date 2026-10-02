@@ -5,7 +5,7 @@
  */
 import { z } from 'zod'
 import type { CandidateInput } from '../../src/ai/candidateSchema'
-import { buildNarrative, canonicalSkill } from '../../src/ai/jobFitRules'
+import { buildNarrative, canonicalSkill, extractRequirements } from '../../src/ai/jobFitRules'
 import { JobFitAnalysisSchema } from '../../src/ai/jobFitSchema'
 import type { JobFitAnalysis, JobFitInput } from '../../src/ai/jobFitSchema'
 import { dedupe, scoreRequirements } from '../../src/ai/jobFitScoring'
@@ -26,7 +26,7 @@ type JobFitLlm = z.infer<typeof JobFitLlmSchema>
 const SYSTEM = `You compare ONE candidate with ONE job posting and explain how competitive the candidate is for the posting's stated requirements.
 
 Do this:
-1. Extract the skills the posting asks for as "requirements". If a posting skill is equivalent to one of the candidate's skill names (see candidateSkillNames), use the candidate's name exactly (for example PostgreSQL -> SQL). Otherwise keep the posting's own wording. importance is "required" unless the posting marks it preferred, nice to have, a plus or a bonus. "jobQuote" must be copied verbatim from the posting (one line or sentence).
+1. Extract EVERY skill the posting asks for as "requirements", wherever it appears: the requirements list, the responsibilities ("what you'll do") and the preferred list. Do not skip skills that appear only in responsibilities. If a posting skill is equivalent to one of the candidate's skill names (see candidateSkillNames), use the candidate's name exactly (for example PostgreSQL -> SQL). Otherwise keep the posting's own wording. importance is "required" unless the posting marks it preferred, nice to have, a plus or a bonus. "jobQuote" must be copied verbatim from the posting (one line or sentence).
 2. Write "evidence": each item pairs a posting quote with the candidate's concrete evidence, naming a project or experience from the input.
 3. Write "concerns": specific and tied to the posting text or the profile (gaps, unevidenced skills, level mismatch).
 4. Write "strategy" with concrete, tailored bullets for resume, portfolio, networking and interview.
@@ -65,7 +65,9 @@ export async function analyzeJobFitWithLlm(input: JobFitInput): Promise<JobFitAn
   const { candidate, job } = input
   const llm = await runLlm(SYSTEM, JSON.stringify({ candidateSkillNames: candidate.skills.map((s) => s.name), candidate, job }), JobFitLlmSchema)
 
-  const requirements = groundRequirements(llm.requirements, job.description, candidate)
+  // Models tend to under-extract. Merge in the rules engine's extraction so obvious requirements are never skipped;
+  // the model's own entries come first and can add skills the vocabulary does not know.
+  const requirements = dedupe([...groundRequirements(llm.requirements, job.description, candidate), ...extractRequirements(job.description)])
   if (requirements.length === 0) {
     throw new HttpError(422, 'No requirements could be matched to the posting text. Paste the full job description, including the requirements section.', 'no_requirements')
   }
