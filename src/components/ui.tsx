@@ -50,7 +50,7 @@ const tones = {
 }
 export type Tone = keyof typeof tones
 export const Badge = ({ children, tone = 'neutral' }: { children: ReactNode; tone?: Tone }) => (
-  <span className={cx('inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium', tones[tone])}>{children}</span>
+  <span className={cx('inline-flex items-center whitespace-nowrap rounded-md px-1.5 py-0.5 text-[11px] font-medium', tones[tone])}>{children}</span>
 )
 
 export const tierTone = (t: string): Tone => (t === 'Strong' ? 'good' : t === 'Reachable' ? 'accent' : 'warn')
@@ -76,3 +76,37 @@ export const Button = ({ children, onClick, variant = 'primary', disabled }: { c
     {children}
   </button>
 )
+
+export const Skeleton = ({ className }: { className?: string }) => <div className={cx('animate-pulse rounded-md bg-zinc-100', className)} />
+
+export function EmptyState({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="px-5 pb-6 pt-2 text-center">
+      <div className="mx-auto rounded-lg border border-dashed border-zinc-200 px-4 py-6">
+        <p className="text-sm font-medium text-zinc-700">{title}</p>
+        {hint && <p className="mt-1 text-xs text-zinc-500">{hint}</p>}
+      </div>
+    </div>
+  )
+}
+
+export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="px-5 pb-5 pt-1">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
+        <span>Couldn’t generate insights: {message}</span>
+        {onRetry && <Button variant="ghost" onClick={onRetry}>Retry</Button>}
+      </div>
+    </div>
+  )
+}
+
+/** Tiny bar sparkline; values are real counts, no smoothing. */
+export function Spark({ values, className }: { values: number[]; className?: string }) {
+  const max = Math.max(...values, 1)
+  return (
+    <div className={cx('flex h-8 items-end gap-[3px]', className)} aria-hidden>
+      {values.map((v, i) => <div key={i} className="w-full rounded-sm bg-indigo-200" style={{ height: `${Math.max((v / max) * 100, 6)}%` }} />)}
+    </div>
+  )
+}

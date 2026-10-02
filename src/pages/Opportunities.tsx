@@ -12,7 +12,7 @@ export default function Opportunities() {
         {opportunities.map((o) => {
           const t = tier(o.score)
           return (
-            <div key={o.id} className="grid grid-cols-[1fr_130px_1.2fr] items-center gap-6 px-5 py-4">
+            <div key={o.id} className="grid items-center gap-3 px-5 py-4 md:grid-cols-[1fr_130px_1.2fr] md:gap-6">
               <div className="min-w-0">
                 <div className="truncate text-sm font-semibold tracking-tight">{o.title}</div>
                 <div className="mt-0.5 text-xs text-zinc-500">{o.company} · {o.location} · {o.postedDaysAgo}d ago</div>

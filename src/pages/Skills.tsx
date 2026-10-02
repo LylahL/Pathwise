@@ -18,8 +18,8 @@ export default function Skills() {
   return (
     <>
       <PageHeader title="Skills" sub={`Your self-rated skills against ${lead.path.title} requirements. Edit levels on the Profile page and everything recomputes.`} />
-      <div className="grid grid-cols-5 gap-4">
-        <Card className="col-span-2">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <Card className="lg:col-span-2">
           <CardHeader title="Skill profile" sub={`You vs. ${lead.path.title}`} />
           <div className="h-[340px] px-2 pb-4">
             <ResponsiveContainer>
@@ -32,7 +32,7 @@ export default function Skills() {
             </ResponsiveContainer>
           </div>
         </Card>
-        <Card className="col-span-3">
+        <Card className="lg:col-span-3">
           <CardHeader title="Gap priority" sub="Weighted deficit summed across all paths (higher = closes more doors)" />
           <div className="divide-y divide-zinc-100">
             {ordered.map((g) => (

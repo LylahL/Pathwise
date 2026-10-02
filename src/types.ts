@@ -15,8 +15,8 @@ export const ApplicationSchema = z.object({
   source: SourceSchema,
   resume: z.enum(['v1 General', 'v2 Data-focused']),
   appliedOn: z.string(), // ISO date
-  /** 0 = no response, 1 = responded/screen, 2 = interview, 3 = final round, 4 = offer */
-  reached: z.number().int().min(0).max(4),
+  /** 0 applied, 1 responded, 2 recruiter screen, 3 interview, 4 final round, 5 offer */
+  reached: z.number().int().min(0).max(5),
   outcome: z.enum(['pending', 'rejected', 'offer']),
 })
 export type Application = z.infer<typeof ApplicationSchema>
@@ -108,7 +108,7 @@ export const AIReportSchema = z.object({
   generatedBy: z.enum(['rules-engine', 'llm']),
   chains: z.array(InsightChainSchema),
   diagnosis: FunnelDiagnosisSchema,
-  nextBestAction: z.object({ chainId: z.string(), title: z.string(), why: z.string(), steps: z.array(z.string()) }),
+  nextBestAction: z.object({ chainId: z.string(), title: z.string(), detail: z.string(), reasons: z.array(z.string()).min(1), steps: z.array(z.string()) }),
 })
 export type AIReport = z.infer<typeof AIReportSchema>
 
@@ -116,4 +116,6 @@ export interface Snapshot {
   profile: Profile
   applications: Application[]
   paths: CareerPath[]
+  /** Skills mentioned by each known job posting (demo set), for market evidence. */
+  jobs?: { pathId: PathId; skills: string[] }[]
 }

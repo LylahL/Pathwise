@@ -16,7 +16,7 @@ export function pathForTitle(title: string): PathId {
 }
 
 const SOURCE: Record<string, Source> = { easy_apply: 'LinkedIn Easy Apply', company_site: 'Company site', career_fair: 'Career fair', cold_email: 'Cold email', warm_intro: 'Referral' }
-const STAGE = ['applied', 'screen', 'interview', 'final', 'offer']
+const STAGE = ['applied', 'responded', 'screen', 'interview', 'final', 'offer']
 
 export function toProfile(db: Db, userId: string): Profile {
   const user = db.users.find((u) => u.id === userId)!
@@ -56,6 +56,11 @@ export function toOpportunities(db: Db, userId: string): Opportunity[] {
       ],
     }),
   )
+}
+
+/** Minimal job view used for market evidence in AI insights. */
+export function toJobSkills(db: Db) {
+  return db.jobs.map((j) => ({ pathId: pathForTitle(j.title), skills: [...j.requiredSkills, ...j.preferredSkills] }))
 }
 
 export function toExperiments(db: Db, userId: string): ExpView[] {

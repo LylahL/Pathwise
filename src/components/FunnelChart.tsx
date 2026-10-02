@@ -1,9 +1,11 @@
 import type { Application } from '../types'
 import { funnelCounts, pct } from '../lib/analytics'
+import { EmptyState } from './ui'
 
 export default function FunnelChart({ apps, breakpoint }: { apps: Application[]; breakpoint?: string }) {
   const counts = funnelCounts(apps)
   const top = counts[0].count || 1
+  if (apps.length === 0) return <EmptyState title="No applications yet" hint="Log an application to see where your funnel drops off." />
   return (
     <div className="space-y-2.5 px-5 pb-5">
       {counts.map((c, i) => {

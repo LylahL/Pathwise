@@ -7,7 +7,7 @@ export default function CareerFit() {
   return (
     <>
       <PageHeader title="Career fit" sub="How your current skills map to each path’s typical requirements, next to what your applications show so far." />
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {ranked.map((r, i) => (
           <Card key={r.path.id}>
             <CardHeader

@@ -5,7 +5,7 @@
 import { CareerPathSchema } from '../types'
 import type { CareerPath } from '../types'
 import { DEMO_REF_DATE, DEMO_USER_ID, demoDb } from './demoDb'
-import { toApplications, toExperiments, toOpportunities, toProfile } from './selectors'
+import { toApplications, toExperiments, toJobSkills, toOpportunities, toProfile } from './selectors'
 
 export { DEMO_REF_DATE, DEMO_USER_ID, demoDb }
 
@@ -14,6 +14,7 @@ export const SKILLS = demoDb.skills.map((s) => s.name)
 export const demoProfile = toProfile(demoDb, DEMO_USER_ID)
 export const demoApplications = toApplications(demoDb, DEMO_USER_ID)
 export const demoOpportunities = toOpportunities(demoDb, DEMO_USER_ID)
+export const demoJobSkills = toJobSkills(demoDb)
 export const demoExperiments = toExperiments(demoDb, DEMO_USER_ID)
 
 const r = (skill: string, level: number, weight: number) => ({ skill, level, weight })

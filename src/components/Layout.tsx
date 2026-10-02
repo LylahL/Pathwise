@@ -16,8 +16,8 @@ const nav = [
 export default function Layout() {
   const { profile, modified, resetDemo } = useApp()
   return (
-    <div className="flex min-h-full">
-      <aside className="sticky top-0 flex h-screen w-56 shrink-0 flex-col border-r border-zinc-200 bg-white px-3 py-4">
+    <div className="flex min-h-full flex-col lg:flex-row">
+      <aside className="hidden h-screen w-56 shrink-0 flex-col border-r border-zinc-200 bg-white px-3 py-4 lg:sticky lg:top-0 lg:flex">
         <div className="mb-6 flex items-center gap-2 px-2">
           <div className="grid h-6 w-6 place-items-center rounded-md bg-zinc-900 text-[11px] font-bold text-white">P</div>
           <span className="text-sm font-semibold tracking-tight">Pathwise</span>
@@ -54,7 +54,19 @@ export default function Layout() {
           </div>
         </div>
       </aside>
-      <main className="min-w-0 flex-1 px-10 py-8">
+      <header className="sticky top-0 z-10 border-b border-zinc-200 bg-white/90 backdrop-blur lg:hidden">
+        <div className="flex items-center gap-2 px-4 pt-3">
+          <div className="grid h-6 w-6 place-items-center rounded-md bg-zinc-900 text-[11px] font-bold text-white">P</div>
+          <span className="text-sm font-semibold tracking-tight">Pathwise</span>
+          <span className="ml-auto rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800">Demo data</span>
+        </div>
+        <nav className="flex gap-1 overflow-x-auto px-3 py-2">
+          {nav.map(({ to, label }) => (
+            <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => cx('shrink-0 rounded-md px-2.5 py-1 text-xs font-medium', isActive ? 'bg-zinc-100 text-zinc-900' : 'text-zinc-500')}>{label}</NavLink>
+          ))}
+        </nav>
+      </header>
+      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-10 lg:py-8">
         <div className="mx-auto max-w-[1180px]"><Outlet /></div>
       </main>
     </div>

@@ -12,7 +12,7 @@ const confidence = (n: number): Pick<InsightChain, 'confidence' | 'confidenceNot
   : n >= 12 ? { confidence: 'medium', confidenceNote: `Based on ${n} applications — directional.` }
   : { confidence: 'low', confidenceNote: `Only ${n} applications in this comparison — treat as a hypothesis, not a result.` }
 
-export function buildReport({ profile, applications: apps, paths }: Snapshot): AIReport {
+export function buildReport({ profile, applications: apps, paths, jobs = [] }: Snapshot): AIReport {
   const chains: InsightChain[] = []
   const ranked = rankPaths(profile, paths, apps)
   const sum = summary(apps)
@@ -26,13 +26,17 @@ export function buildReport({ profile, applications: apps, paths }: Snapshot): A
     const mine = apps.filter((a) => a.pathId === target.path.id)
     const responded = mine.filter((a) => a.reached >= 1).length
     const deployed = profile.projects.filter((p) => p.deployed).length
+    const gapSkills = target.gaps.slice(0, 2).map((g) => g.skill)
+    const pathJobs = jobs.filter((j) => j.pathId === target.path.id)
+    const withGap = pathJobs.filter((j) => gapSkills.some((s) => j.skills.includes(s)))
     chains.push({
       id: 'skill-gap', area: 'skills', title: `Close the ${g1.skill} gap for ${target.path.title}`,
       evidence: [
-        `Profile: ${strong || 'no skills at target level yet'} (self-rated, 0–5).`,
-        `${target.path.title} fit is ${target.score}% (${target.tier}).`,
         `${mine.length} ${target.path.title} applications → ${responded} responses.`,
+        `${target.path.title} fit is ${target.score}% (${target.tier}).`,
+        `Profile: ${strong || 'no skills at target level yet'} (self-rated, 0–5).`,
         `${deployed} of ${profile.projects.length} projects are deployed.`,
+        ...(pathJobs.length ? [`${withGap.length} of ${pathJobs.length} ${target.path.title} postings in the demo job set mention ${gapSkills.join(' or ')}.`] : []),
       ],
       inference: `Your analytical foundation is solid, but ${target.path.title} postings weight ${g1.skill} heavily and your profile does not yet show evidence of it.`,
       gap: `${g1.skill}: L${g1.have} vs L${g1.need} required${g2 ? `; ${g2.skill}: L${g2.have} vs L${g2.need}` : ''}.`,
@@ -161,13 +165,15 @@ export function buildReport({ profile, applications: apps, paths }: Snapshot): A
   // Prefer high impact among achievable (effort ≤ 3) actions; fall back to all if none qualify.
   const doable = chains.filter((c) => c.effort <= 3)
   const nba = [...(doable.length ? doable : chains)].sort((a, b) => b.impact - a.impact || a.effort - b.effort)[0]
-  const fallback = { chainId: 'none', title: 'Log more applications', why: `Only ${sum.applications} applications logged — not enough to diagnose.`, steps: ['Add applications with source and resume version'] }
+  const fallback = { chainId: 'none', title: 'Log more applications', detail: 'Track source and resume version on every application.', reasons: [`Only ${sum.applications} applications logged — not enough to diagnose.`], steps: ['Add applications with source and resume version'] }
 
   return {
     generatedBy: 'rules-engine',
     chains,
     diagnosis,
-    nextBestAction: nba ? { chainId: nba.id, title: nba.recommendation, why: `${nba.title} — impact ${nba.impact}/5, effort ${nba.effort}/5.`, steps: nba.steps } : fallback,
+    nextBestAction: nba
+      ? { chainId: nba.id, title: nba.title, detail: nba.recommendation, reasons: [...nba.evidence.slice(0, 3), `Highest impact (${nba.impact}/5) among actions that take modest effort (${nba.effort}/5).`], steps: nba.steps }
+      : fallback,
   }
 }
 

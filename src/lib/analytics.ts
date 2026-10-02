@@ -1,6 +1,8 @@
 import type { Application, CareerPath, Profile, SkillReq } from '../types'
 
-export const STAGES = ['Applied', 'Responded', 'Interview', 'Final round', 'Offer'] as const
+export const STAGES = ['Applications', 'Responses', 'Recruiter screens', 'Interviews', 'Final rounds'] as const
+/** Per-application label for the furthest stage reached (index = Application.reached). */
+export const STAGE_LABELS = ['Applied', 'Responded', 'Recruiter screen', 'Interview', 'Final round', 'Offer'] as const
 /** Reference response rate used only to scale the readiness score; tune freely. */
 export const RESPONSE_RATE_TARGET = 0.25
 
@@ -16,9 +18,10 @@ export function summary(apps: Application[]) {
   return {
     applications: apps.length,
     responses: f[1].count,
-    interviews: f[2].count,
-    finals: f[3].count,
-    offers: f[4].count,
+    screens: f[2].count,
+    interviews: f[3].count,
+    finals: f[4].count,
+    offers: apps.filter((a) => a.reached >= 5).length,
     responseRate: safeDiv(f[1].count, apps.length),
   }
 }
@@ -31,7 +34,7 @@ export function segmentBy(apps: Application[], keyFn: (a: Application) => string
   return [...m.entries()]
     .map(([key, list]) => {
       const responded = list.filter((a) => a.reached >= 1).length
-      return { key, n: list.length, responded, interviews: list.filter((a) => a.reached >= 2).length, rate: safeDiv(responded, list.length) }
+      return { key, n: list.length, responded, interviews: list.filter((a) => a.reached >= 3).length, rate: safeDiv(responded, list.length) }
     })
     .sort((a, b) => b.n - a.n)
 }
@@ -101,5 +104,25 @@ export function readiness(profile: Profile, paths: CareerPath[], apps: Applicati
       { label: 'Response rate vs target', weight: 0.3, value: Math.round(respPart) },
       { label: 'Deployed projects (2 = full)', weight: 0.2, value: Math.round(projPart) },
     ],
+  }
+}
+
+/** Strongest and weakest skills among those the given paths ask for. */
+export function skillStanding(profile: Profile, paths: CareerPath[]) {
+  const m = new Map<string, { skill: string; have: number; need: number; paths: number; weightedDeficit: number }>()
+  for (const p of paths) {
+    for (const q of p.requirements) {
+      const have = profile.skills[q.skill] ?? 0
+      const cur = m.get(q.skill) ?? { skill: q.skill, have, need: 0, paths: 0, weightedDeficit: 0 }
+      cur.need = Math.max(cur.need, q.level)
+      cur.paths++
+      cur.weightedDeficit += q.weight * Math.max(q.level - have, 0)
+      m.set(q.skill, cur)
+    }
+  }
+  const all = [...m.values()]
+  return {
+    strongest: all.filter((s) => s.have >= s.need).sort((a, b) => b.have - a.have || b.paths - a.paths).slice(0, 4),
+    weakest: all.filter((s) => s.have < s.need).sort((a, b) => b.weightedDeficit - a.weightedDeficit).slice(0, 4),
   }
 }

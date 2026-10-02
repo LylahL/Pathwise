@@ -58,8 +58,8 @@ export const ApplicationSchema = z.object({
   userId: id,
   jobId: id,
   date: isoDate,
-  /** Furthest stage reached. */
-  status: z.enum(['applied', 'screen', 'interview', 'final', 'offer']),
+  /** Furthest stage reached. `responded` = any reply (incl. rejection); `screen` = recruiter screen held. */
+  status: z.enum(['applied', 'responded', 'screen', 'interview', 'final', 'offer']),
   resumeVersion: z.string(),
   /** True if a person referred the candidate. */
   referral: z.boolean(),

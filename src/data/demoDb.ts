@@ -99,9 +99,9 @@ const STRATEGY: Record<Src, Pick<Application, 'strategy' | 'referral'>> = {
   Referral: { strategy: 'warm_intro', referral: true },
   'Cold email': { strategy: 'cold_email', referral: false },
 }
-const STATUS = ['applied', 'screen', 'interview', 'final', 'offer'] as const
+const STATUS = ['applied', 'responded', 'screen', 'interview', 'final', 'offer'] as const
 
-// [company, role, source, resume, daysAgo, stage reached (0–4), outcome]
+// [company, role, source, resume, daysAgo, stage reached (0 applied … 5 offer), outcome]
 type Row = [string, string, Src, string, number, number, Application['outcome']]
 const rows: Row[] = [
   // LinkedIn Easy Apply — v1 (14 apps, 0 responses)
@@ -120,7 +120,7 @@ const rows: Row[] = [
   ['Juniper Bank', 'Data Analyst', LI, V1, 31, 0, 'rejected'],
   ['Aster Media', 'Junior Data Analyst', LI, V1, 26, 0, 'pending'],
   // LinkedIn Easy Apply — v2 (6 apps, 1 response)
-  ['Verdant Foods', 'Data Scientist I', LI, V2, 22, 1, 'rejected'],
+  ['Verdant Foods', 'Data Scientist I', LI, V2, 22, 2, 'rejected'],
   ['Ironleaf Analytics', 'Associate Data Scientist', LI, V2, 20, 0, 'pending'],
   ['Zephyr Mobility', 'Product Analyst', LI, V2, 19, 0, 'pending'],
   ['Kestrel Edge', 'ML Engineer I', LI, V2, 18, 0, 'pending'],
@@ -136,7 +136,7 @@ const rows: Row[] = [
   ['Redwood Systems', 'Software Engineer, New Grad', CS, V1, 23, 0, 'pending'],
   ['Plover Commerce', 'Product Analyst', CS, V1, 21, 0, 'pending'],
   // Company site — v2 (4 apps, 1 response)
-  ['Harbor Analytics', 'Data Scientist, New Grad', CS, V2, 17, 2, 'rejected'],
+  ['Harbor Analytics', 'Data Scientist, New Grad', CS, V2, 17, 3, 'rejected'],
   ['Lumen Retail', 'Data Scientist I', CS, V2, 13, 0, 'pending'],
   ['Foxglove Insurance', 'Data Analyst', CS, V2, 11, 0, 'pending'],
   ['Cinder Games', 'Product Analyst', CS, V2, 9, 0, 'pending'],
@@ -144,13 +144,13 @@ const rows: Row[] = [
   ['Ridgeway Software', 'Software Engineer I', CF, V1, 39, 1, 'rejected'],
   ['Alder Systems', 'Software Engineer, New Grad', CF, V1, 39, 0, 'rejected'],
   // Career fair — v2 (3 apps, 2 responses)
-  ['Summit Analytics', 'Data Analyst', CF, V2, 15, 3, 'pending'],
-  ['Larkspur Media', 'Product Analyst', CF, V2, 15, 2, 'pending'],
+  ['Summit Analytics', 'Data Analyst', CF, V2, 15, 4, 'pending'],
+  ['Larkspur Media', 'Product Analyst', CF, V2, 15, 3, 'pending'],
   ['Basalt Energy', 'Data Scientist I', CF, V2, 15, 0, 'rejected'],
   // Referral — v2 (4 apps, 3 responses)
-  ['Cardinal Health Tech', 'Data Scientist I', RF, V2, 12, 2, 'rejected'],
-  ['Windmere Labs', 'Data Analyst', RF, V2, 10, 2, 'pending'],
-  ['Tamarack Software', 'Product Analyst', RF, V2, 8, 3, 'pending'],
+  ['Cardinal Health Tech', 'Data Scientist I', RF, V2, 12, 3, 'rejected'],
+  ['Windmere Labs', 'Data Analyst', RF, V2, 10, 3, 'pending'],
+  ['Tamarack Software', 'Product Analyst', RF, V2, 8, 4, 'pending'],
   ['Prairie Data Co', 'Data Scientist, New Grad', RF, V2, 6, 0, 'pending'],
   // Cold email — v1 (3 apps, 0 responses)
   ['Cascade Robotics', 'ML Engineer Intern→FT', CE, V1, 45, 0, 'rejected'],

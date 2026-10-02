@@ -27,7 +27,7 @@ function ExperimentCard({ e, onLaunch, onComplete }: { e: Experiment; onLaunch?:
       </dl>
       {e.control && e.variant && (
         <div className="mt-3 rounded-lg bg-zinc-50 p-3 text-xs">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <div><div className="text-zinc-500">Baseline</div><div className="tabular text-sm font-semibold">{e.control.responses}/{e.control.n} <span className="font-normal text-zinc-500">({pct(c ?? 0)})</span></div></div>
             <div><div className="text-zinc-500">Variant</div><div className="tabular text-sm font-semibold">{e.variant.responses}/{e.variant.n} <span className="font-normal text-zinc-500">({pct(v ?? 0)})</span></div></div>
           </div>
@@ -64,10 +64,10 @@ export default function Experiments() {
       </div>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Active · {active.length}</h2>
-      <div className="mb-8 grid grid-cols-2 gap-4">{active.map((e) => <ExperimentCard key={e.id} e={e} onComplete={() => complete(e.id)} />)}</div>
+      <div className="mb-8 grid grid-cols-1 gap-4 lg:grid-cols-2">{active.map((e) => <ExperimentCard key={e.id} e={e} onComplete={() => complete(e.id)} />)}</div>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-zinc-500">Completed · {done.length}</h2>
-      <div className="grid grid-cols-2 gap-4">{done.map((e) => <ExperimentCard key={e.id} e={e} />)}</div>
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{done.map((e) => <ExperimentCard key={e.id} e={e} />)}</div>
     </>
   )
 }

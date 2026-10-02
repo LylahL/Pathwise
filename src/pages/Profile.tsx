@@ -8,8 +8,8 @@ export default function Profile() {
   return (
     <>
       <PageHeader title="Profile" sub="Demo persona. Adjust skill levels to see fit, gaps and insights update live." right={<Badge tone="warn">Demo data</Badge>} />
-      <div className="grid grid-cols-5 gap-4">
-        <div className="col-span-2 space-y-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        <div className="space-y-4 lg:col-span-2">
           <Card>
             <CardHeader title={profile.name} sub={`${profile.major} · ${profile.school} · Class of ${profile.gradYear}`} />
             <div className="px-5 pb-5">
@@ -39,7 +39,7 @@ export default function Profile() {
             </ul>
           </Card>
         </div>
-        <Card className="col-span-3 self-start">
+        <Card className="self-start lg:col-span-3">
           <CardHeader title="Skill levels" sub="0 = none · 1 = exposure · 3 = project-proven · 5 = expert (self-rated)" />
           <div className="divide-y divide-zinc-100">
             {SKILLS.map((s) => (

@@ -4,7 +4,7 @@ import { useApp } from '../store'
 import { Badge, Card, CardHeader, PageHeader } from '../components/ui'
 import type { Tone } from '../components/ui'
 import SegmentChart from '../components/SourceChart'
-import { STAGES, weekly } from '../lib/analytics'
+import { STAGE_LABELS, weekly } from '../lib/analytics'
 
 const tip = { fontSize: 12, borderRadius: 8, border: '1px solid #e4e4e7', boxShadow: 'none' }
 
@@ -13,12 +13,12 @@ export default function Applications() {
   const [source, setSource] = useState('All')
   const sources = ['All', ...new Set(applications.map((a) => a.source))]
   const rows = useMemo(() => applications.filter((a) => source === 'All' || a.source === source).sort((a, b) => b.appliedOn.localeCompare(a.appliedOn)), [applications, source])
-  const stageTone = (r: number, o: string): Tone => (o === 'offer' ? 'good' : r >= 2 ? 'accent' : r === 1 ? 'warn' : 'neutral')
+  const stageTone = (r: number, o: string): Tone => (o === 'offer' ? 'good' : r >= 3 ? 'accent' : r >= 1 ? 'warn' : 'neutral')
 
   return (
     <>
       <PageHeader title="Applications" sub="Volume, response and conversion by the dimensions you can actually change." />
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
           <CardHeader title="Weekly activity" sub="Applied vs. responded" />
           <div className="h-[190px] px-3 pb-4">
@@ -48,7 +48,7 @@ export default function Applications() {
             </select>
           }
         />
-        <table className="w-full text-left text-[13px]">
+        <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-[13px]">
           <thead className="border-y border-zinc-100 bg-zinc-50/60 text-[11px] uppercase tracking-wider text-zinc-500">
             <tr>{['Company', 'Role', 'Source', 'Resume', 'Applied', 'Stage reached'].map((h) => <th key={h} className="px-5 py-2 font-medium">{h}</th>)}</tr>
           </thead>
@@ -60,11 +60,11 @@ export default function Applications() {
                 <td className="px-5 py-2.5 text-zinc-600">{a.source}</td>
                 <td className="px-5 py-2.5 text-zinc-600">{a.resume}</td>
                 <td className="tabular px-5 py-2.5 text-zinc-500">{a.appliedOn}</td>
-                <td className="px-5 py-2.5"><Badge tone={stageTone(a.reached, a.outcome)}>{a.reached === 0 ? (a.outcome === 'rejected' ? 'No response' : 'Waiting') : STAGES[a.reached]}</Badge></td>
+                <td className="px-5 py-2.5"><Badge tone={stageTone(a.reached, a.outcome)}>{a.reached === 0 ? (a.outcome === 'rejected' ? 'No response' : 'Waiting') : STAGE_LABELS[a.reached]}</Badge></td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       </Card>
     </>
   )
