@@ -14,7 +14,7 @@ const nav = [
 ]
 
 export default function Layout() {
-  const { profile, modified, resetDemo } = useApp()
+  const { profile, modified, resetDemo, apiStatus } = useApp()
   return (
     <div className="flex min-h-full flex-col lg:flex-row">
       <aside className="hidden h-screen w-56 shrink-0 flex-col border-r border-zinc-200 bg-white px-3 py-4 lg:sticky lg:top-0 lg:flex">
@@ -44,6 +44,12 @@ export default function Layout() {
             <button onClick={resetDemo} className="mt-2 block cursor-pointer font-medium underline">Reset to seed</button>
           )}
         </div>
+        {apiStatus !== 'off' && (
+          <div className="mt-3 flex items-center gap-2 px-2 text-[11px] text-zinc-500">
+            <span className={cx('h-1.5 w-1.5 rounded-full', apiStatus === 'online' ? 'bg-emerald-500' : apiStatus === 'offline' ? 'bg-rose-500' : 'bg-zinc-300')} />
+            {apiStatus === 'online' ? 'Changes saved to backend' : apiStatus === 'offline' ? 'Backend offline — changes won’t persist' : 'Connecting to backend…'}
+          </div>
+        )}
         <div className="mt-3 flex items-center gap-2 px-2">
           <div className="grid h-7 w-7 place-items-center rounded-full bg-indigo-100 text-[11px] font-semibold text-indigo-700">
             {profile.name.split(' ').map((s) => s[0]).join('')}

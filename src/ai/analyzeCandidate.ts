@@ -20,7 +20,11 @@ async function callEndpoint(url: string, input: unknown, paths: CareerPath[], ti
       // The JSON Schema lets the server force structured output; paths are the reference requirements to score against.
       body: JSON.stringify({ task: 'analyzeCandidate', input, paths, outputSchema: candidateAnalysisJsonSchema() }),
     })
-    if (!res.ok) throw new Error(`endpoint returned HTTP ${res.status}`)
+    if (!res.ok) {
+      // Servers in this repo reply { error, message }; surface the message so the UI can say why.
+      const detail = await res.json().then((j: { message?: unknown }) => (typeof j.message === 'string' ? j.message : '')).catch(() => '')
+      throw new Error(detail || `endpoint returned HTTP ${res.status}`)
+    }
     const body: unknown = await res.json().catch(() => { throw new Error('response was not valid JSON') })
     const parsed = CandidateAnalysisSchema.safeParse({ ...(body as object), generatedBy: 'llm' })
     if (!parsed.success) {
@@ -40,14 +44,15 @@ async function callEndpoint(url: string, input: unknown, paths: CareerPath[], ti
  * Analyze a candidate profile into strengths, skills, evidence, gaps, interests, ranked career paths
  * and recommendations. Output is always schema-validated.
  *
- * - No VITE_AI_ENDPOINT: the deterministic rules engine answers.
- * - Endpoint set: its response must validate; on timeout, HTTP error, bad JSON or schema/semantic
+ * - No backend configured (VITE_API_BASE unset): the deterministic rules engine answers.
+ * - Backend configured: its response must validate; on timeout, HTTP error, bad JSON or schema/semantic
  *   violation we fall back to the rules engine and report `fallbackReason`.
  * - Invalid *input* is a caller bug and throws (nothing sensible to fall back to).
  */
-export async function analyzeCandidate(rawInput: unknown, ctx: { paths: CareerPath[]; timeoutMs?: number; /** Overrides VITE_AI_ENDPOINT (used in tests). */ endpoint?: string }): Promise<AnalysisResult> {
+export async function analyzeCandidate(rawInput: unknown, ctx: { paths: CareerPath[]; timeoutMs?: number; /** Overrides the backend URL derived from VITE_API_BASE (used in tests). */ endpoint?: string }): Promise<AnalysisResult> {
   const input = CandidateInputSchema.parse(rawInput)
-  const endpoint = ctx.endpoint ?? (import.meta.env?.VITE_AI_ENDPOINT as string | undefined)
+  const apiBase = import.meta.env?.VITE_API_BASE as string | undefined
+  const endpoint = ctx.endpoint ?? (apiBase ? `${apiBase}/analyze-candidate` : undefined)
   let fallbackReason: string | undefined
 
   if (endpoint) {

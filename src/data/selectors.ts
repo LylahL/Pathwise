@@ -64,15 +64,16 @@ export function toJobSkills(db: Db) {
   return db.jobs.map((j) => ({ pathId: pathForTitle(j.title), skills: [...j.requiredSkills, ...j.preferredSkills] }))
 }
 
-export function toExperiments(db: Db, userId: string): ExpView[] {
-  return db.experiments.filter((e) => e.userId === userId).map((e) =>
-    ExperimentSchema.parse({
-      id: `e-seed-${e.id}`, title: e.title, hypothesis: e.hypothesis, change: e.change,
-      metric: 'Response rate (responded ÷ applied)', targetN: e.sampleSize, status: e.status, origin: 'demo-seed',
-      control: e.result?.control, variant: e.result?.variant,
-    }),
-  )
+/** UI view of one stored experiment. */
+export function experimentView(e: Db['experiments'][number]): ExpView {
+  return ExperimentSchema.parse({
+    id: e.id, chainId: e.chainId, title: e.title, hypothesis: e.hypothesis, change: e.change,
+    metric: 'Response rate (responded ÷ applied)', targetN: e.sampleSize, status: e.status, origin: e.origin,
+    control: e.result?.control, variant: e.result?.variant,
+  })
 }
+
+export const toExperiments = (db: Db, userId: string): ExpView[] => db.experiments.filter((e) => e.userId === userId).map(experimentView)
 
 /** Candidate-analysis input for one user. `levels` overrides stored skill levels (e.g. live edits on the Profile page). */
 export function toCandidateInput(db: Db, userId: string, levels?: Record<string, number>): CandidateInput {

@@ -45,7 +45,7 @@ export default function CareerFit() {
         right={a && <Badge tone={a.generatedBy === 'llm' ? 'accent' : 'neutral'}>{a.generatedBy === 'llm' ? 'AI analysis' : 'Rules-based analysis'}</Badge>}
       />
       {analysisError && <Card className="mb-4"><ErrorState message={analysisError} onRetry={retryAnalysis} /></Card>}
-      {analysis?.fallbackReason && <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2.5 text-xs text-amber-800">AI analysis unavailable ({analysis.fallbackReason}). Showing the deterministic rules-based analysis instead.</p>}
+      {analysis?.fallbackReason && <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2.5 text-xs text-amber-800">AI analysis unavailable: {analysis.fallbackReason}. Showing the deterministic rules-based analysis instead.</p>}
       {!a && !analysisError && <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-56" />)}</div>}
 
       {a && (

@@ -83,6 +83,9 @@ export const ExperimentSchema = z.object({
   result: z.object({ control: counts, variant: counts }).nullable(),
   confidence: z.enum(['low', 'medium', 'high']),
   status: z.enum(['proposed', 'running', 'completed']),
+  origin: z.enum(['demo-seed', 'ai-proposed']).default('ai-proposed'),
+  /** Id of the AI insight this experiment came from, if any. */
+  chainId: z.string().optional(),
 })
 export type Experiment = z.infer<typeof ExperimentSchema>
 

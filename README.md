@@ -2,16 +2,35 @@
 2026 BYU Homecoming Hackathon
 
 AI-powered career intelligence dashboard: turns the job search into a data problem.
+All data in the repo is **demo data** (fictional persona and companies).
+
+## Run
 
 ```
-npm install && npm run dev
+npm install
+npm run dev        # frontend only, in-memory, rules-based analysis
+npm run dev:full   # frontend + API (http://localhost:8787), persisted to SQLite
 ```
+
+To enable LLM-powered candidate analysis, copy `.env.example` to `.env.local` and set `GEMINI_API_KEY`
+(or `ANTHROPIC_API_KEY`, optionally with `AI_PROVIDER`). Keys are read only by the server; never prefix them with
+`VITE_`. Without a key the app still works: the API returns 503 and the UI falls back to the deterministic rules
+engine, saying why.
+
+`npm run db:reset` deletes the local database; it is re-seeded on next start.
 
 ## Structure
-- `src/types.ts` – zod schemas for domain data and AI output (`AIReportSchema`)
-- `src/data/seed.ts` – **demo data only** (fictional persona and companies)
+- `src/model.ts` – zod schemas for the data model (shared by server and frontend)
+- `src/types.ts` – UI view shapes; `src/data/selectors.ts` derives them from the model tables
+- `src/data/demoDb.ts` – **demo seed data**
 - `src/lib/analytics.ts` – funnel, segments, fit, readiness (pure functions)
-- `src/ai/` – insight generation, separate from UI. `engine.ts` is a deterministic rules engine that emits the
-  Evidence → Inference → Gap → Recommendation → Experiment shape. Set `VITE_AI_ENDPOINT` to POST the snapshot to an
-  LLM-backed service instead; responses are validated with zod and fall back to the engine on failure.
-- `src/components/`, `src/pages/` – reusable UI and the seven views
+- `src/ai/` – AI contracts and fallbacks. `candidateSchema.ts` is the validated contract for candidate analysis,
+  `analyzeRules.ts` is the deterministic implementation, `analyzeCandidate.ts` calls the backend and falls back
+  to the rules engine on any failure
+- `src/api.ts` – typed client for the backend (enabled when `VITE_API_BASE` is set)
+- `server/` – Hono API on Node
+  - `routes/data.ts` – skills, experiments, jobs, applications (validated writes), `/api/bootstrap`, `/api/reset` (dev only)
+  - `routes/analyze.ts` + `ai/analyze.ts` – `POST /api/analyze-candidate`: Gemini or Claude (`ai/providers/`)
+    with schema-constrained JSON output. The model writes the narrative; the server owns the numbers (fit scores, missing skills, skill support)
+    and drops evidence that cites a source not in the profile
+  - `db/` – SQLite via `node:sqlite`; one table per entity holding zod-validated JSON

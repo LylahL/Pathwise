@@ -124,7 +124,7 @@ export default function Dashboard() {
           />
           {analysisError && <ErrorState message={analysisError} onRetry={retryAnalysis} />}
           {!analysis && !analysisError && <div className="space-y-4 px-5 pb-5">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}</div>}
-          {analysis?.fallbackReason && <p className="mx-5 mb-3 rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-800">AI analysis unavailable ({analysis.fallbackReason}); showing the rules-based analysis.</p>}
+          {analysis?.fallbackReason && <p className="mx-5 mb-3 rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-800">AI analysis unavailable: {analysis.fallbackReason}. Showing the rules-based analysis.</p>}
           {analysis && fit.length === 0 && <EmptyState title="No career paths to show" hint="Add skills or experience to your profile." />}
           {analysis && fit.length > 0 && (
             <div className="space-y-4 px-5 pb-5">

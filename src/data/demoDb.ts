@@ -188,13 +188,13 @@ const experiments: Db['experiments'] = [
     id: 'e1', userId: DEMO_USER_ID, title: 'Tailor resume headline to the job description',
     hypothesis: 'Mirroring the posting’s top 3 keywords in the resume summary raises recruiter response.',
     control: 'Generic resume summary', change: 'Rewrite summary per posting for company-site applications.',
-    sampleSize: 12, result: { control: { n: 8, responses: 1 }, variant: { n: 4, responses: 1 } }, confidence: 'low', status: 'completed',
+    sampleSize: 12, result: { control: { n: 8, responses: 1 }, variant: { n: 4, responses: 1 } }, confidence: 'low', status: 'completed', origin: 'demo-seed',
   },
   {
     id: 'e2', userId: DEMO_USER_ID, title: 'Attend one career fair per month',
     hypothesis: 'In-person contact converts to recruiter responses more than online applications.',
     control: 'Online-only applications', change: 'Attend fair, follow up within 48 hours, apply with v2 resume.',
-    sampleSize: 10, result: { control: { n: 20, responses: 1 }, variant: { n: 5, responses: 3 } }, confidence: 'low', status: 'running',
+    sampleSize: 10, result: { control: { n: 20, responses: 1 }, variant: { n: 5, responses: 3 } }, confidence: 'low', status: 'running', origin: 'demo-seed',
   },
 ]
 

@@ -3,7 +3,8 @@ import type { ReactNode } from 'react'
 import { analyzeCandidate, generateReport } from './ai'
 import type { AnalysisResult } from './ai'
 import { careerPaths, demoApplications, demoDb, demoExperiments, demoJobSkills, demoOpportunities, demoProfile, DEMO_USER_ID } from './data/seed'
-import { toCandidateInput } from './data/selectors'
+import { experimentView, toCandidateInput } from './data/selectors'
+import { api, apiEnabled } from './api'
 import { fit, readiness, rankPaths, summary } from './lib/analytics'
 import type { AIReport, Experiment, InsightChain } from './types'
 
@@ -18,7 +19,24 @@ function useStore() {
   const [analysisError, setAnalysisError] = useState<string | null>(null)
   const [analysisAttempt, setAnalysisAttempt] = useState(0)
   const analysed = useRef(false)
-  const modified = profile !== demoProfile
+  const [apiStatus, setApiStatus] = useState<'off' | 'connecting' | 'online' | 'offline'>(apiEnabled ? 'connecting' : 'off')
+  const modified = Object.keys(demoProfile.skills).some((k) => profile.skills[k] !== demoProfile.skills[k])
+  const offline = () => setApiStatus('offline')
+
+  // Load persisted edits from the backend when one is configured; otherwise stay in-memory.
+  useEffect(() => {
+    if (!apiEnabled) return
+    let live = true
+    api.bootstrap()
+      .then((b) => {
+        if (!live) return
+        setProfile((p) => ({ ...p, skills: { ...p.skills, ...Object.fromEntries(b.skills.map((s) => [s.name, s.level])) } }))
+        setExperiments(b.experiments.map(experimentView))
+        setApiStatus('online')
+      })
+      .catch(() => live && offline())
+    return () => { live = false }
+  }, [])
 
   // AI report is re-derived whenever the underlying data changes.
   useEffect(() => {
@@ -57,14 +75,28 @@ function useStore() {
     .map((c) => chainToExperiment(c))
 
   return {
-    profile, applications, experiments, report, reportError, analysis, analysisError,
+    profile, applications, experiments, report, reportError, analysis, analysisError, apiStatus,
     retryAnalysis: () => { setAnalysis(null); setAnalysisAttempt((n) => n + 1) },
     modified, proposals, ...derived,
     retryReport: () => { setReport(null); setAttempt((n) => n + 1) },
-    setSkill: (skill: string, level: number) => setProfile((p) => ({ ...p, skills: { ...p.skills, [skill]: level } })),
-    resetDemo: () => { setProfile(demoProfile); setExperiments(demoExperiments) },
-    launch: (e: Experiment) => setExperiments((xs) => [{ ...e, status: 'running' }, ...xs]),
-    complete: (id: string) => setExperiments((xs) => xs.map((e) => (e.id === id ? { ...e, status: 'completed' } : e))),
+    setSkill: (skill: string, level: number) => {
+      setProfile((p) => ({ ...p, skills: { ...p.skills, [skill]: level } }))
+      if (apiEnabled) api.putSkill(skill, level).catch(offline)
+    },
+    resetDemo: () => {
+      setProfile(demoProfile); setExperiments(demoExperiments)
+      if (apiEnabled) api.reset().catch(offline)
+    },
+    launch: (e: Experiment) => {
+      setExperiments((xs) => [{ ...e, status: 'running' }, ...xs])
+      if (apiEnabled) {
+        api.createExperiment({ id: e.id, chainId: e.chainId, title: e.title, hypothesis: e.hypothesis, control: 'Current approach', change: e.change, sampleSize: e.targetN, result: null, confidence: 'low', status: 'running', origin: e.origin }).catch(offline)
+      }
+    },
+    complete: (id: string) => {
+      setExperiments((xs) => xs.map((e) => (e.id === id ? { ...e, status: 'completed' } : e)))
+      if (apiEnabled) api.patchExperiment(id, { status: 'completed' }).catch(offline)
+    },
   }
 }
 
