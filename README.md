@@ -27,10 +27,17 @@ engine, saying why.
 - `src/ai/` – AI contracts and fallbacks. `candidateSchema.ts` is the validated contract for candidate analysis,
   `analyzeRules.ts` is the deterministic implementation, `analyzeCandidate.ts` calls the backend and falls back
   to the rules engine on any failure
+- `src/ai/jobFit*.ts` – job-specific fit. `jobFitSchema.ts` is the contract, `jobFitScoring.ts` computes the score and
+  match/partial/missing split from extracted requirements (shared by both paths), `jobFitRules.ts` extracts
+  requirements from pasted text and builds the evidence-based strategy, `analyzeJobFit.ts` calls the backend with fallback.
+  Demo link: `/job-strategy?sample=0`
 - `src/api.ts` – typed client for the backend (enabled when `VITE_API_BASE` is set)
 - `server/` – Hono API on Node
   - `routes/data.ts` – skills, experiments, jobs, applications (validated writes), `/api/bootstrap`, `/api/reset` (dev only)
   - `routes/analyze.ts` + `ai/analyze.ts` – `POST /api/analyze-candidate`: Gemini or Claude (`ai/providers/`)
     with schema-constrained JSON output. The model writes the narrative; the server owns the numbers (fit scores, missing skills, skill support)
     and drops evidence that cites a source not in the profile
+  - `ai/jobFit.ts` – `POST /api/analyze-job-fit`: the model extracts requirements (with verbatim quotes) and writes the
+    narrative; the server drops requirements whose quote is not in the posting, computes the score itself, and strips
+    hiring-prediction language
   - `db/` – SQLite via `node:sqlite`; one table per entity holding zod-validated JSON

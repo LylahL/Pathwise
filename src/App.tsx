@@ -8,6 +8,7 @@ import Applications from './pages/Applications'
 import Skills from './pages/Skills'
 import Experiments from './pages/Experiments'
 import Profile from './pages/Profile'
+import JobStrategy from './pages/JobStrategy'
 
 export default function App() {
   return (
@@ -18,6 +19,7 @@ export default function App() {
             <Route index element={<Dashboard />} />
             <Route path="fit" element={<CareerFit />} />
             <Route path="opportunities" element={<Opportunities />} />
+            <Route path="job-strategy" element={<JobStrategy />} />
             <Route path="applications" element={<Applications />} />
             <Route path="skills" element={<Skills />} />
             <Route path="experiments" element={<Experiments />} />

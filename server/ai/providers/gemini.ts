@@ -1,13 +1,15 @@
 import { ApiError, FinishReason, GoogleGenAI } from '@google/genai'
 import { z } from 'zod'
 import { HttpError } from '../../http'
-import { LlmAnalysisSchema } from '../llmSchema'
 import type { Generate } from '../llmSchema'
 
 const notConfigured = () => new HttpError(503, 'AI is not configured on the server (missing or invalid GEMINI_API_KEY)', 'ai_not_configured')
 
 // Gemini takes plain JSON Schema; drop the draft marker zod adds.
-const { $schema: _draft, ...responseJsonSchema } = z.toJSONSchema(LlmAnalysisSchema) as Record<string, unknown>
+function jsonSchema(schema: z.ZodType): Record<string, unknown> {
+  const { $schema: _draft, ...rest } = z.toJSONSchema(schema) as Record<string, unknown>
+  return rest
+}
 
 function mapError(e: unknown): HttpError {
   if (e instanceof HttpError) return e
@@ -21,7 +23,7 @@ function mapError(e: unknown): HttpError {
   return new HttpError(502, 'AI analysis failed', 'ai_error')
 }
 
-export const generate: Generate = async (system, user, model) => {
+export const generate: Generate = async (system, user, model, schema) => {
   const apiKey = process.env.GEMINI_API_KEY ?? process.env.GOOGLE_API_KEY
   if (!apiKey) throw notConfigured()
   try {
@@ -29,7 +31,7 @@ export const generate: Generate = async (system, user, model) => {
     const res = await ai.models.generateContent({
       model,
       contents: user,
-      config: { systemInstruction: system, responseMimeType: 'application/json', responseJsonSchema, temperature: 0.3 },
+      config: { systemInstruction: system, responseMimeType: 'application/json', responseJsonSchema: jsonSchema(schema), temperature: 0.3 },
     })
     if (res.promptFeedback?.blockReason) throw new HttpError(502, 'The AI provider declined this request', 'ai_refused')
     const reason = res.candidates?.[0]?.finishReason
@@ -38,9 +40,9 @@ export const generate: Generate = async (system, user, model) => {
 
     let raw: unknown
     try { raw = JSON.parse(res.text ?? '') } catch { throw new HttpError(502, 'AI response was not valid JSON', 'ai_invalid') }
-    const parsed = LlmAnalysisSchema.safeParse(raw)
+    const parsed = schema.safeParse(raw)
     if (!parsed.success) throw new HttpError(502, 'AI response did not match the expected structure', 'ai_invalid')
-    return parsed.data
+    return parsed.data as never
   } catch (e) {
     const mapped = mapError(e)
     if (!(e instanceof HttpError) && mapped.code !== 'ai_not_configured') console.error('[analyze:gemini] provider call failed:', e instanceof Error ? `${e.name}: ${e.message.split('\n')[0]}` : e)

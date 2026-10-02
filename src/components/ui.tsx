@@ -90,11 +90,11 @@ export function EmptyState({ title, hint }: { title: string; hint?: string }) {
   )
 }
 
-export function ErrorState({ message, onRetry }: { message: string; onRetry?: () => void }) {
+export function ErrorState({ message, onRetry, prefix = 'Couldn’t generate insights:' }: { message: string; onRetry?: () => void; prefix?: string }) {
   return (
     <div className="px-5 pb-5 pt-1">
       <div className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-[13px] text-rose-800">
-        <span>Couldn’t generate insights: {message}</span>
+        <span>{prefix} {message}</span>
         {onRetry && <Button variant="ghost" onClick={onRetry}>Retry</Button>}
       </div>
     </div>

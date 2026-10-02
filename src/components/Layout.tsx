@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { Beaker, BriefcaseBusiness, Compass, LayoutDashboard, ListChecks, Target, UserRound } from 'lucide-react'
+import { Beaker, BriefcaseBusiness, Compass, Crosshair, LayoutDashboard, ListChecks, Target, UserRound } from 'lucide-react'
 import { useApp } from '../store'
 import { cx } from './ui'
 
@@ -7,6 +7,7 @@ const nav = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/fit', label: 'Career Fit', icon: Compass },
   { to: '/opportunities', label: 'Opportunities', icon: BriefcaseBusiness },
+  { to: '/job-strategy', label: 'Job Strategy', icon: Crosshair },
   { to: '/applications', label: 'Applications', icon: ListChecks },
   { to: '/skills', label: 'Skills', icon: Target },
   { to: '/experiments', label: 'Experiments', icon: Beaker },

@@ -19,5 +19,5 @@ export const LlmAnalysisSchema = z.object({
 })
 export type LlmAnalysis = z.infer<typeof LlmAnalysisSchema>
 
-/** A provider turns (system prompt, user JSON) into a validated LlmAnalysis, or throws HttpError. */
-export type Generate = (system: string, user: string, model: string) => Promise<LlmAnalysis>
+/** A provider turns (system prompt, user JSON) into output validated against `schema`, or throws HttpError. */
+export type Generate = <S extends z.ZodType>(system: string, user: string, model: string, schema: S) => Promise<z.infer<S>>

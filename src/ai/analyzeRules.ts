@@ -9,7 +9,7 @@ import type { CandidateAnalysis, CandidateInput } from './candidateSchema'
 type Skill = CandidateInput['skills'][number]
 
 /** Concrete next step per skill gap, grouped so related gaps merge into one recommendation. */
-const REMEDY: Record<string, { group: string; step: string }> = {
+export const REMEDY: Record<string, { group: string; step: string }> = {
   Cloud: { group: 'deploy', step: 'Deploy a small service on a cloud free tier and document the architecture' },
   'Production Deployment': { group: 'deploy', step: 'Wrap a model or app in an API, containerize it and deploy it with basic monitoring' },
   'System Design': { group: 'deploy', step: 'Write a one-page design doc (components, data flow, failure modes) for an existing project' },
@@ -29,7 +29,7 @@ const GROUP_TITLE: Record<string, string> = {
   exp: 'Add experimentation and statistics depth', product: 'Practice product thinking',
   ml: 'Deepen applied machine learning', viz: 'Strengthen data visualization', sql: 'Sharpen SQL', py: 'Strengthen Python', comm: 'Practice communicating results',
 }
-const stepFor = (skill: string) => REMEDY[skill]?.step ?? `Build a project that demonstrates ${skill}`
+export const stepFor = (skill: string) => REMEDY[skill]?.step ?? `Build a project that demonstrates ${skill}`
 const isDeployed = (input: CandidateInput) => input.projects.some((p) => p.evidence.some((e) => /deployed/i.test(e)))
 
 export function analyzeWithRules(input: CandidateInput, paths: CareerPath[]): CandidateAnalysis {

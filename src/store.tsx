@@ -61,6 +61,7 @@ function useStore() {
   }, [profile, analysisAttempt])
 
   const derived = useMemo(() => ({
+    candidateInput: toCandidateInput(demoDb, DEMO_USER_ID, profile.skills),
     summary: summary(applications),
     ranked: rankPaths(profile, careerPaths, applications),
     readiness: readiness(profile, careerPaths, applications),
