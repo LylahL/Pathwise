@@ -6,7 +6,7 @@
 import { randomBytes } from 'node:crypto'
 import { Hono } from 'hono'
 import type { MiddlewareHandler } from 'hono'
-import { deleteCookie, getSignedCookie, setSignedCookie } from 'hono/cookie'
+import { deleteCookie, getCookie, getSignedCookie, setCookie, setSignedCookie } from 'hono/cookie'
 import { z } from 'zod'
 import { config } from './config'
 import { body, HttpError } from './http'
@@ -20,7 +20,16 @@ const SessionUser = z.object({ sub: z.string(), email: z.string(), name: z.strin
 export type SessionUser = z.infer<typeof SessionUser>
 
 const clientId = () => process.env.GOOGLE_CLIENT_ID || undefined
-export const authEnabled = () => Boolean(clientId())
+
+/**
+ * DEMO ONLY: MOCK_AUTH=1 simulates Google sign-in as a fictional user, with no Google account involved.
+ * Ignored in production so it can never act as a back door.
+ */
+const mockAuth = () => !config.isProd && process.env.MOCK_AUTH === '1'
+const MOCK_USER: SessionUser = { sub: 'mock-demo-user', email: 'lylah.demo@example.com', name: 'Lylah Liu' }
+const SIGNED_OUT_FLAG = 'pathwise_signed_out'
+
+export const authEnabled = () => Boolean(clientId()) || mockAuth()
 
 /** Optional allow-list so strangers can't spend your AI quota: ALLOWED_EMAILS=a@x.com,b@y.com */
 const allowed = (email: string) => {
@@ -60,18 +69,35 @@ export const requireSession: MiddlewareHandler = async (c, next) => {
 
 export const auth = new Hono()
 
+const startSession = (c: Parameters<MiddlewareHandler>[0], user: SessionUser) =>
+  setSignedCookie(c, COOKIE, JSON.stringify(user), SECRET, { httpOnly: true, sameSite: 'Lax', secure: config.isProd, path: '/', maxAge: WEEK })
+
 // The client id is public by design (it is embedded in every Google sign-in button).
-auth.get('/auth/me', async (c) => c.json({ enabled: authEnabled(), clientId: clientId() ?? null, user: authEnabled() ? await readSession(c) : null }))
+auth.get('/auth/me', async (c) => {
+  if (!authEnabled()) return c.json({ enabled: false, clientId: null, mock: false, user: null })
+  let user = await readSession(c)
+  // Mock mode starts you already "signed in", unless you deliberately signed out.
+  if (!user && mockAuth() && !getCookie(c, SIGNED_OUT_FLAG)) { user = MOCK_USER; await startSession(c, user) }
+  return c.json({ enabled: true, clientId: clientId() ?? null, mock: mockAuth(), user })
+})
+
+auth.post('/auth/mock', async (c) => {
+  if (!mockAuth()) throw new HttpError(404, 'Not found', 'not_found')
+  deleteCookie(c, SIGNED_OUT_FLAG, { path: '/' })
+  await startSession(c, MOCK_USER)
+  return c.json({ user: MOCK_USER })
+})
 
 auth.post('/auth/google', async (c) => {
-  if (!authEnabled()) throw new HttpError(400, 'Sign-in is not enabled on this server', 'auth_disabled')
+  if (!clientId()) throw new HttpError(400, 'Google sign-in is not enabled on this server', 'auth_disabled')
   const { credential } = await body(c, z.object({ credential: z.string().min(20).max(4096) }))
   const user = await verifyGoogleToken(credential)
-  await setSignedCookie(c, COOKIE, JSON.stringify(user), SECRET, { httpOnly: true, sameSite: 'Lax', secure: config.isProd, path: '/', maxAge: WEEK })
+  await startSession(c, user)
   return c.json({ user })
 })
 
 auth.post('/auth/logout', (c) => {
   deleteCookie(c, COOKIE, { path: '/' })
+  if (mockAuth()) setCookie(c, SIGNED_OUT_FLAG, '1', { path: '/', sameSite: 'Lax', maxAge: WEEK })
   return c.json({ ok: true })
 })
