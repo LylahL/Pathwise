@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { useApp } from '../store'
-import { Badge, Card, CardHeader, PageHeader } from '../components/ui'
+import { BarChart3, Inbox, ListChecks, MailCheck } from 'lucide-react'
+import { Badge, Card, CardHeader, EmptyState, PageHeader } from '../components/ui'
 import type { Tone } from '../components/ui'
 import SegmentChart from '../components/SourceChart'
 import { STAGE_LABELS, weekly } from '../lib/analytics'
@@ -17,10 +18,10 @@ export default function Applications() {
 
   return (
     <>
-      <PageHeader title="Applications" sub="Volume, response and conversion by the dimensions you can actually change." />
+      <PageHeader kicker="3 · Where it’s breaking" title="Applications" sub="Volume, response and conversion by the dimensions you can actually change." />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card>
-          <CardHeader title="Weekly activity" sub="Applied vs. responded" />
+          <CardHeader icon={BarChart3} tone="info" title="Weekly activity" sub="Applied vs. responded" />
           <div className="h-[190px] px-3 pb-4">
             <ResponsiveContainer>
               <BarChart data={weekly(applications)} margin={{ left: -24, right: 8, top: 4 }}>
@@ -28,18 +29,19 @@ export default function Applications() {
                 <XAxis dataKey="week" tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#71717a' }} />
                 <YAxis allowDecimals={false} tickLine={false} axisLine={false} tick={{ fontSize: 11, fill: '#71717a' }} />
                 <Tooltip cursor={{ fill: '#f4f4f5' }} contentStyle={tip} />
-                <Bar dataKey="applied" name="Applied" isAnimationActive={false} fill="#c7d2fe" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="applied" name="Applied" isAnimationActive={false} fill="#bae6fd" radius={[3, 3, 0, 0]} />
                 <Bar dataKey="responded" name="Responded" isAnimationActive={false} fill="#4f46e5" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
         </Card>
-        <Card><CardHeader title="Response rate by source" /><SegmentChart apps={applications} by={(a) => a.source} /></Card>
-        <Card><CardHeader title="Response rate by resume" /><SegmentChart apps={applications} by={(a) => a.resume} /></Card>
+        <Card><CardHeader icon={MailCheck} tone="good" title="Response rate by source" sub="Faded = small sample" /><SegmentChart apps={applications} by={(a) => a.source} /></Card>
+        <Card><CardHeader icon={ListChecks} tone="accent" title="Response rate by resume" sub="Resume version and channel overlap, so compare with care" /><SegmentChart apps={applications} by={(a) => a.resume} /></Card>
       </div>
 
       <Card className="mt-4 overflow-hidden">
         <CardHeader
+          icon={Inbox}
           title="All applications"
           sub={`${rows.length} shown`}
           right={
@@ -65,6 +67,7 @@ export default function Applications() {
             ))}
           </tbody>
         </table></div>
+        {rows.length === 0 && <EmptyState icon={Inbox} title="No applications match this filter" hint="Choose a different source, or “All”." />}
       </Card>
     </>
   )

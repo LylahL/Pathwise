@@ -1,5 +1,6 @@
 import { useApp } from '../store'
-import { Badge, Bar, Card, PageHeader, scoreColor, tierTone } from '../components/ui'
+import { BriefcaseBusiness } from 'lucide-react'
+import { Badge, Bar, Card, EmptyState, PageHeader, scoreColor, tierTone } from '../components/ui'
 import { careerPaths } from '../data/seed'
 import { tier } from '../lib/analytics'
 
@@ -7,7 +8,8 @@ export default function Opportunities() {
   const { opportunities } = useApp()
   return (
     <>
-      <PageHeader title="Opportunities" sub="Roles ranked by how well your current skills match their requirements. Demo listings — fictional companies." />
+      <PageHeader kicker="2 · What fits you" title="Opportunities" sub="Roles ranked by how well your current skills match their requirements. Demo listings — fictional companies." />
+      {opportunities.length === 0 && <Card><div className="pt-4"><EmptyState icon={BriefcaseBusiness} title="No open roles to rank" hint="Roles you haven’t applied to appear here, ranked by how well your skills match." /></div></Card>}
       <Card className="divide-y divide-zinc-100">
         {opportunities.map((o) => {
           const t = tier(o.score)
@@ -24,7 +26,7 @@ export default function Opportunities() {
               </div>
               <div className="flex flex-wrap gap-1 text-[11px]">
                 {o.strengths.map((s) => <Badge key={s.skill} tone="good">✓ {s.skill}</Badge>)}
-                {o.gaps.map((g) => <Badge key={g.skill} tone="bad">{g.skill} L{g.have}/{g.need}</Badge>)}
+                {o.gaps.map((g) => <Badge key={g.skill} tone="bad">✕ {g.skill} <span className="font-normal opacity-70">L{g.have}/{g.need}</span></Badge>)}
               </div>
             </div>
           )

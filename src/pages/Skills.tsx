@@ -1,7 +1,13 @@
 import { PolarAngleAxis, PolarGrid, Radar, RadarChart, ResponsiveContainer } from 'recharts'
+import { Radar as RadarIcon, Target } from 'lucide-react'
 import { useApp } from '../store'
-import { Badge, Bar, Card, CardHeader, PageHeader } from '../components/ui'
+import { Badge, Card, CardHeader, LevelMeter, PageHeader } from '../components/ui'
 import { SKILLS } from '../data/seed'
+
+const severity = (score: number, top: number) => {
+  const r = top ? score / top : 0
+  return r >= 0.6 ? { label: 'High', tone: 'bad' as const } : r >= 0.25 ? { label: 'Medium', tone: 'warn' as const } : { label: 'Low', tone: 'info' as const }
+}
 
 export default function Skills() {
   const { profile, ranked } = useApp()
@@ -17,32 +23,46 @@ export default function Skills() {
 
   return (
     <>
-      <PageHeader title="Skills" sub={`Your self-rated skills against ${lead.path.title} requirements. Edit levels on the Profile page and everything recomputes.`} />
+      <PageHeader kicker="2 · What fits you" title="Skills" sub={`Your self-rated skills against ${lead.path.title} requirements. Edit levels on the Profile page and everything recomputes.`} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-2">
-          <CardHeader title="Skill profile" sub={`You vs. ${lead.path.title}`} />
-          <div className="h-[340px] px-2 pb-4">
+        <Card className="self-start lg:col-span-2">
+          <CardHeader icon={RadarIcon} tone="accent" title="Skill profile" sub={`You vs. ${lead.path.title}`} />
+          <div className="h-[340px] px-2">
             <ResponsiveContainer>
               <RadarChart data={data} outerRadius="68%">
                 <PolarGrid stroke="#e4e4e7" />
                 <PolarAngleAxis dataKey="skill" tick={{ fontSize: 10, fill: '#52525b' }} />
-                <Radar isAnimationActive={false} dataKey="Required" stroke="#a1a1aa" fill="#a1a1aa" fillOpacity={0.1} strokeDasharray="4 3" />
-                <Radar isAnimationActive={false} dataKey="You" stroke="#4f46e5" fill="#4f46e5" fillOpacity={0.25} />
+                <Radar isAnimationActive={false} dataKey="Required" stroke="#a1a1aa" fill="#a1a1aa" fillOpacity={0.08} strokeDasharray="4 3" />
+                <Radar isAnimationActive={false} dataKey="You" stroke="#4f46e5" strokeWidth={2} fill="#6366f1" fillOpacity={0.22} />
               </RadarChart>
             </ResponsiveContainer>
           </div>
+          <div className="flex gap-4 border-t border-zinc-100 px-5 py-3 text-[11px] text-zinc-500">
+            <span className="inline-flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-indigo-500" />You</span>
+            <span className="inline-flex items-center gap-1.5"><span className="h-0 w-3 border-t border-dashed border-zinc-400" />Required for {lead.path.title}</span>
+          </div>
         </Card>
         <Card className="lg:col-span-3">
-          <CardHeader title="Gap priority" sub="Weighted deficit summed across all paths (higher = closes more doors)" />
-          <div className="divide-y divide-zinc-100">
-            {ordered.map((g) => (
-              <div key={g.skill} className="grid grid-cols-[150px_1fr_auto] items-center gap-4 px-5 py-3 text-[13px]">
-                <div><div className="font-medium text-zinc-900">{g.skill}</div><div className="tabular text-xs text-zinc-500">L{g.have} → L{g.need}</div></div>
-                <div><Bar value={g.score} max={ordered[0].score} color="bg-rose-400" /><div className="mt-1.5 flex flex-wrap gap-1">{[...new Set(g.paths)].map((p) => <Badge key={p}>{p}</Badge>)}</div></div>
-                <span className="tabular w-8 text-right font-semibold text-zinc-700">{g.score}</span>
-              </div>
-            ))}
-          </div>
+          <CardHeader icon={Target} tone="warn" title="Gap priority" sub="Weighted deficit summed across all paths. Higher means the gap closes more doors." />
+          <ul className="divide-y divide-zinc-100">
+            {ordered.map((g) => {
+              const sev = severity(g.score, ordered[0].score)
+              return (
+                <li key={g.skill} className="grid grid-cols-1 gap-x-4 gap-y-2 px-5 py-3.5 text-[13px] sm:grid-cols-[10rem_1fr_auto] sm:items-center">
+                  <div>
+                    <div className="font-medium text-zinc-900">{g.skill}</div>
+                    <div className="num text-xs text-zinc-500">L{g.have} → needs L{g.need}</div>
+                  </div>
+                  <div>
+                    <LevelMeter have={g.have} need={g.need} />
+                    <div className="mt-2 flex flex-wrap gap-1">{[...new Set(g.paths)].map((p) => <Badge key={p}>{p}</Badge>)}</div>
+                  </div>
+                  <Badge tone={sev.tone}>{sev.label} · {g.score}</Badge>
+                </li>
+              )
+            })}
+          </ul>
+          <p className="border-t border-zinc-100 px-5 py-3 text-[11px] text-zinc-400">Filled segments = your level. The outlined segment = the level roles ask for.</p>
         </Card>
       </div>
     </>

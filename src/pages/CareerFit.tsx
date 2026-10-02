@@ -1,5 +1,5 @@
 import { useApp } from '../store'
-import { Badge, Bar, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, scoreColor, tierTone } from '../components/ui'
+import { AiMark, Badge, Bar, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, scoreColor, tierTone } from '../components/ui'
 import { pct, tier } from '../lib/analytics'
 import type { CandidateAnalysis } from '../ai'
 
@@ -40,13 +40,19 @@ export default function CareerFit() {
   return (
     <>
       <PageHeader
+        kicker="2 · What fits you"
         title="Career fit"
         sub="How your skills, projects and experience map to each path — with the evidence, gaps and risks behind every score."
-        right={a && <Badge tone={a.generatedBy === 'llm' ? 'accent' : 'neutral'}>{a.generatedBy === 'llm' ? 'AI analysis' : 'Rules-based analysis'}</Badge>}
+        right={a && <AiMark source={a.generatedBy} />}
       />
       {analysisError && <Card className="mb-4"><ErrorState message={analysisError} onRetry={retryAnalysis} /></Card>}
       {analysis?.fallbackReason && <p className="mb-4 rounded-lg bg-amber-50 px-4 py-2.5 text-xs text-amber-800">AI analysis unavailable: {analysis.fallbackReason}. Showing the deterministic rules-based analysis instead.</p>}
-      {!a && !analysisError && <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-56" />)}</div>}
+      {!a && !analysisError && (
+        <div aria-busy="true">
+          <p className="mb-3 text-sm text-zinc-500">Reading your skills, projects and experience, then scoring each career…</p>
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-56" />)}</div>
+        </div>
+      )}
 
       {a && (
         <>

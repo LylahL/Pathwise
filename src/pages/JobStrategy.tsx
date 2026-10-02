@@ -7,7 +7,7 @@ import { JOB_TEXT_MIN, JOB_TEXT_MAX } from '../ai/jobFitSchema'
 import { sampleJobs } from '../data/sampleJobs'
 import { tier } from '../lib/analytics'
 import { useApp } from '../store'
-import { Badge, Bar, Button, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, scoreColor, tierTone } from '../components/ui'
+import { AiMark, Badge, Bar, Button, Card, CardHeader, EmptyState, ErrorState, LevelMeter, PageHeader, Skeleton, scoreColor, tierTone } from '../components/ui'
 
 const verdict = { Strong: 'Strong match', Reachable: 'Partial match', Stretch: 'Stretch' } as const
 
@@ -64,7 +64,7 @@ export default function JobStrategy() {
 
   return (
     <>
-      <PageHeader title="Job strategy" sub="Paste a job description to see how your profile compares, where the gaps are, and what to do about them." />
+      <PageHeader kicker="2 · What fits you → 4 · What to do next" title="Job strategy" sub="Paste a job description to see how your profile compares, where the gaps are, and what to do about them." />
 
       <Card>
         <div className="grid gap-3 p-5 sm:grid-cols-2">
@@ -89,7 +89,12 @@ export default function JobStrategy() {
       {state === 'idle' && (
         <Card className="mt-4"><div className="pt-4"><EmptyState title="Paste a posting to get a job-specific strategy" hint="You’ll get a fit score, the evidence behind it, your biggest gaps, and tailored resume, portfolio, networking and interview advice." /></div></Card>
       )}
-      {state === 'loading' && <div className="mt-4 grid gap-4 lg:grid-cols-2"><Skeleton className="h-48" /><Skeleton className="h-48" /><Skeleton className="h-40" /><Skeleton className="h-40" /></div>}
+      {state === 'loading' && (
+        <div className="mt-4" aria-busy="true">
+          <p className="mb-3 text-sm text-zinc-500">Reading the posting, matching it against your evidence, then drafting your strategy…</p>
+          <div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-48" /><Skeleton className="h-48" /><Skeleton className="h-40" /><Skeleton className="h-40" /></div>
+        </div>
+      )}
       {state === 'error' && <Card className="mt-4"><div className="pt-3"><ErrorState prefix="Couldn’t analyse this posting:" message={error} onRetry={tooShort ? undefined : () => void run()} /></div></Card>}
 
       {state === 'done' && a && t && (
@@ -102,7 +107,7 @@ export default function JobStrategy() {
               <div>
                 <div className="text-xs font-medium text-zinc-500">{a.job.title}{a.job.company ? ` · ${a.job.company}` : ''}</div>
                 <div className="tabular mt-2 text-5xl font-semibold leading-none tracking-tight">{a.overallFit}%</div>
-                <div className="mt-3 flex items-center gap-2"><Badge tone={tierTone(t)}>{verdict[t]}</Badge><Badge>{a.generatedBy === 'llm' ? 'AI analysis' : 'Rules-based'}</Badge></div>
+                <div className="mt-3 flex items-center gap-2"><Badge tone={tierTone(t)}>{verdict[t]}</Badge><AiMark source={a.generatedBy} /></div>
                 <Bar value={a.overallFit} color={scoreColor(a.overallFit)} className="mt-4" />
                 <p className="mt-3 text-xs leading-snug text-zinc-500">{a.matchingSkills.length} of {a.requirements.length} requirements met at the level this posting seems to assume.</p>
               </div>
@@ -123,7 +128,7 @@ export default function JobStrategy() {
           <div className="grid gap-4 lg:grid-cols-2">
             {/* 2. Why you match */}
             <Card>
-              <CardHeader title="Why you match" sub="Posting wording paired with your evidence" />
+              <CardHeader title="Why you match" sub="Posting wording paired with your evidence" right={<AiMark source={a.generatedBy} />} />
               {a.evidence.length ? <Bullets items={a.evidence} /> : <EmptyState title="No evidenced matches yet" hint="Link skills to projects or roles on your profile." />}
               <details className="border-t border-zinc-100 px-5 py-3 text-xs text-zinc-500">
                 <summary className="cursor-pointer font-medium text-zinc-700">What the posting asks for ({a.requirements.length})</summary>
@@ -140,8 +145,7 @@ export default function JobStrategy() {
                 <div className="space-y-3 px-5 pb-4">
                   {gaps.slice(0, 5).map((g) => (
                     <div key={g.skill} className="text-[13px]">
-                      <div className="mb-1 flex items-center justify-between"><span className="font-medium text-zinc-800">{g.skill} <Badge tone={g.kind === 'missing' ? 'bad' : 'warn'}>{g.kind}</Badge></span><span className="tabular text-zinc-500">L{g.have} / ~L{g.need}</span></div>
-                      <Bar value={g.have} max={g.need} color={g.kind === 'missing' ? 'bg-rose-400' : 'bg-amber-400'} />
+                      <div className="mb-1.5 flex items-center justify-between gap-3"><span className="font-medium text-zinc-800">{g.skill} <Badge tone={g.kind === 'missing' ? 'bad' : 'warn'}>{g.kind}</Badge></span><span className="flex items-center gap-2"><LevelMeter have={g.have} need={g.need} /><span className="num w-14 text-right text-xs text-zinc-500">L{g.have} → ~{g.need}</span></span></div>
                       {quote(g.skill) && <p className="mt-1 text-[11px] italic text-zinc-400">“{quote(g.skill)}”</p>}
                     </div>
                   ))}

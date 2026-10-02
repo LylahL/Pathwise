@@ -172,7 +172,7 @@ export function buildReport({ profile, applications: apps, paths, jobs = [] }: S
     chains,
     diagnosis,
     nextBestAction: nba
-      ? { chainId: nba.id, title: nba.title, detail: nba.recommendation, reasons: [...nba.evidence.slice(0, 3), `Highest impact (${nba.impact}/5) among actions that take modest effort (${nba.effort}/5).`], steps: nba.steps }
+      ? { chainId: nba.id, title: nba.title, detail: nba.recommendation, reasons: nba.evidence.slice(0, 3), steps: nba.steps, impact: nba.impact, effort: nba.effort }
       : fallback,
   }
 }

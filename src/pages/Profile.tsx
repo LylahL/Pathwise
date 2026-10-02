@@ -7,7 +7,7 @@ export default function Profile() {
   const { profile, setSkill } = useApp()
   return (
     <>
-      <PageHeader title="Profile" sub="Demo persona. Adjust skill levels to see fit, gaps and insights update live." right={<Badge tone="warn">Demo data</Badge>} />
+      <PageHeader kicker="Your data" title="Profile" sub="Demo persona. Adjust skill levels to see fit, gaps and insights update live." right={<Badge tone="warn">Demo data</Badge>} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-2">
           <Card>

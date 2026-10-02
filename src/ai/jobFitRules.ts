@@ -7,7 +7,7 @@ import { stepFor } from './analyzeRules'
 import type { CandidateInput } from './candidateSchema'
 import { JobFitAnalysisSchema, JobFitError } from './jobFitSchema'
 import type { JobFitAnalysis, JobFitInput } from './jobFitSchema'
-import { dedupe, findSkill, scoreRequirements, WEIGHT } from './jobFitScoring'
+import { findSkill, scoreRequirements, WEIGHT } from './jobFitScoring'
 import type { Requirement, Scored } from './jobFitScoring'
 
 // ---------- Requirement extraction ----------
@@ -21,15 +21,30 @@ const VOCAB: [skill: string, pattern: RegExp][] = [
   ['Communication', /\bcommunicat|\bstakeholders?\b|\bpresent(ing|ations?)?\b|\bstorytelling\b|\bcross-functional\b/i],
   ['Experimentation', /\ba\/b\b|\bab test|\bexperiment(s|ation|ing)?\b|\bcausal inference\b/i],
   ['Product Sense', /\bproduct (sense|thinking|metrics|analytics|intuition)\b|\broadmaps?\b/i],
-  ['Software Engineering', /\bsoftware (engineering|development)\b|\bdata structures?\b|\balgorithms?\b|\bunit tests?\b|\bcode review|\bobject[- ]oriented\b|\bversion control\b|\bgit\b/i],
+  ['Software Engineering', /\bsoftware (engineering|development)\b|\b(develop|build|maintain|design)[^.\n]{0,40}\bsoftware\b|\bdata structures?\b|\balgorithms?\b|\bunit tests?\b|\bcode review|\bobject[- ]oriented\b|\bversion control\b|\bgit\b/i],
+  ['TypeScript', /\btypescript\b/i],
+  ['JavaScript', /\bjavascript\b/i],
+  ['React', /\breact\b/i],
+  ['Node.js', /\bnode(\.?js)?\b/i],
+  ['Ruby on Rails', /\bruby\b|\brails\b/i],
+  ['API Design', /\bapis?\b|\brestful?\b/i],
+  ['Full-Stack Web Development', /\bfull[- ]stack\b|\bweb (applications?|development)\b|\bfront[- ]?end\b|\bback[- ]?end\b/i],
+  ['Technical Leadership', /\bmentor(ing|ship)?\b|\btechnical leadership\b/i],
   ['System Design', /\bsystem design\b|\bdistributed systems?\b|\bscalab(le|ility)\b|\bmicroservices?\b|\barchitecture\b/i],
   ['Cloud', /\baws\b|\bazure\b|\bgcp\b|\bgoogle cloud\b|\bcloud\b|\bkubernetes\b|\blambda\b/i],
-  ['Production Deployment', /\bproduction\b|\bdeploy(ed|ing|ment|s)?\b|\bmlops\b|\bci\/cd\b|\bcontainer(s|ize|ized|ization)?\b|\bdocker\b|\bmodel serving\b|\bmonitoring\b/i],
+  ['Production Deployment', /\bproduction\b|\bdeploy(ed|ing|ment|s)?\b|\bmlops\b|\bci\/cd\b|\bdevops\b|\bcontainer(s|ize|ized|ization)?\b|\bdocker\b|\bmodel serving\b|\bmonitoring\b/i],
 ]
-const PREFERRED_WORDS = /\b(preferred|nice[- ]to[- ]have|a plus|bonus|ideally|desirable|familiarity with|exposure to)\b/i
-const PREFERRED_HEADING = /^(preferred|nice[- ]to[- ]have|bonus|desirable|extra|plus)\b/i
-const isHeading = (line: string) => line.length < 60 && (/:\s*$/.test(line) || (line === line.toUpperCase() && /[A-Z]/.test(line)) || /^(about|responsibilities|requirements|qualifications|preferred|what you)/i.test(line))
-const clean = (line: string) => line.replace(/^[\s\-*•·•\d.)]+/, '').trim().slice(0, 200)
+const PREFERRED_WORDS = /\b(preferred|nice[- ]to[- ]haves?|a plus|bonus|ideally|desirable|familiarity with|exposure to)\b/i
+const PREFERRED_HEADING = /^(preferred|nice[- ]to[- ]haves?|bonus|desirable|extra|plus)\b/i
+const REQUIRED_HEADING = /requirements|qualifications|responsibilities|what you|you will|who you/i
+// A heading is a short line without sentence punctuation that ends in a colon, is ALL CAPS, or starts with a known heading word
+// ("Nice to haves" has no colon, so the word list matters).
+const HEADING_WORD = /^(responsibilities|requirements|qualifications|preferred|nice[- ]to[- ]haves?|bonus|benefits|perks|compensation|about\b|what you|who you|position (title|overview)|job description|you will|we offer)/i
+const isHeading = (line: string) => line.length <= 60 && !/[.!?]$/.test(line) && (/:\s*$/.test(line) || (line === line.toUpperCase() && /[A-Z]/.test(line)) || HEADING_WORD.test(line))
+// Sections that describe the company or its perks, not the job: skills mentioned there are not requirements.
+const IGNORED_HEADING = /\b(benefits|perks|compensation)\b|^about (?!the (job|role|position|team))|equal opportunity/i
+// Strip bullets and list numbering ("1.", "2)") but keep meaningful leading digits such as "2+ years".
+const clean = (line: string) => line.replace(/^[\s\-*•·\u2022]+/, '').replace(/^\d{1,2}[.)]\s+/, '').trim().slice(0, 200)
 
 /** Map a posting's wording (e.g. "PostgreSQL", "Kubernetes") to one of the candidate's skill names, if it is equivalent. */
 export function canonicalSkill(candidate: CandidateInput, name: string): string | undefined {
@@ -38,17 +53,37 @@ export function canonicalSkill(candidate: CandidateInput, name: string): string 
   return VOCAB.find(([skill, pattern]) => pattern.test(name) && findSkill(candidate, skill))?.[0]
 }
 
+type Kind = 'required' | 'preferred' | 'intro'
+
+/**
+ * Where a skill is mentioned decides how it is weighed: requirement/responsibility sections count as required,
+ * nice-to-have wording counts as preferred, and a mention only in the intro (often a stack description) counts as
+ * required unless the posting later lists it as a nice-to-have.
+ */
 export function extractRequirements(description: string): Requirement[] {
-  const found: Requirement[] = []
-  let section: 'required' | 'preferred' = 'required'
+  const hits = new Map<string, { kind: Kind; quote: string }[]>()
+  let section: Kind | 'ignore' = 'intro'
   for (const raw of description.split(/\r?\n/)) {
     const line = clean(raw)
     if (!line) continue
-    if (isHeading(line)) { section = PREFERRED_HEADING.test(line) ? 'preferred' : 'required'; continue }
-    const importance = section === 'preferred' || PREFERRED_WORDS.test(line) ? 'preferred' : 'required'
-    for (const [skill, pattern] of VOCAB) if (pattern.test(line)) found.push({ skill, importance, jobQuote: line })
+    if (isHeading(line)) {
+      section = IGNORED_HEADING.test(line) ? 'ignore' : PREFERRED_HEADING.test(line) ? 'preferred' : REQUIRED_HEADING.test(line) ? 'required' : 'intro'
+      continue
+    }
+    if (section === 'ignore') continue
+    const kind: Kind = section === 'preferred' || PREFERRED_WORDS.test(line) ? 'preferred' : section
+    for (const [skill, pattern] of VOCAB) if (pattern.test(line)) hits.set(skill, [...(hits.get(skill) ?? []), { kind, quote: line }])
   }
-  return dedupe(found)
+  const out: Requirement[] = []
+  for (const [skill, list] of hits) {
+    const req = list.find((h) => h.kind === 'required')
+    const pref = list.find((h) => h.kind === 'preferred')
+    const pick = req ?? pref ?? list[0]
+    // Intro-only mentions are required; an explicit nice-to-have beats an intro mention.
+    const importance = req ? 'required' : pref ? 'preferred' : 'required'
+    out.push({ skill, importance, jobQuote: (req ?? pref ?? pick).quote })
+  }
+  return out
 }
 
 // ---------- Narrative ----------

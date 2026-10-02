@@ -108,7 +108,11 @@ export const AIReportSchema = z.object({
   generatedBy: z.enum(['rules-engine', 'llm']),
   chains: z.array(InsightChainSchema),
   diagnosis: FunnelDiagnosisSchema,
-  nextBestAction: z.object({ chainId: z.string(), title: z.string(), detail: z.string(), reasons: z.array(z.string()).min(1), steps: z.array(z.string()) }),
+  nextBestAction: z.object({
+    chainId: z.string(), title: z.string(), detail: z.string(), reasons: z.array(z.string()).min(1), steps: z.array(z.string()),
+    /** 1–5 ratings behind the ranking; optional so older or external reports still validate. */
+    impact: z.number().min(1).max(5).optional(), effort: z.number().min(1).max(5).optional(),
+  }),
 })
 export type AIReport = z.infer<typeof AIReportSchema>
 
