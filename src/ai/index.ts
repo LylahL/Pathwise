@@ -19,3 +19,7 @@ export async function generateReport(snapshot: Snapshot): Promise<AIReport> {
   }
   return AIReportSchema.parse(buildReport(snapshot))
 }
+
+export { analyzeCandidate } from './analyzeCandidate'
+export type { AnalysisResult } from './analyzeCandidate'
+export type { CandidateAnalysis, CandidateInput, CareerPathAnalysis } from './candidateSchema'

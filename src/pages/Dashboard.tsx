@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { useApp } from '../store'
-import { pct, skillStanding, weekly } from '../lib/analytics'
+import { pct, skillStanding, tier, weekly } from '../lib/analytics'
 import { Badge, Bar, Card, CardHeader, EmptyState, ErrorState, PageHeader, Skeleton, Spark, Stat, scoreColor, tierTone } from '../components/ui'
 import FunnelChart from '../components/FunnelChart'
 import ReadinessRing from '../components/ReadinessRing'
@@ -40,8 +40,9 @@ function ExperimentOutcome({ e }: { e: Experiment }) {
 }
 
 export default function Dashboard() {
-  const { summary, readiness, ranked, applications, report, reportError, retryReport, experiments, proposals, profile } = useApp()
-  const fit = FIT_PATHS.map((id) => ranked.find((r) => r.path.id === id)!).filter(Boolean).sort((a, b) => b.score - a.score)
+  const { summary, readiness, ranked, applications, report, reportError, retryReport, experiments, proposals, profile, analysis, analysisError, retryAnalysis } = useApp()
+  const fit = (analysis?.analysis.careerPaths ?? []).filter((p) => FIT_PATHS.includes(p.pathId))
+  const appsByPath = (id: string) => ranked.find((r) => r.path.id === id)
   const { strongest, weakest } = skillStanding(profile, careerPaths.filter((p) => FIT_PATHS.includes(p.id)))
   const outcomes = [...experiments, ...proposals].slice(0, 4)
   const nba = report?.nextBestAction
@@ -116,19 +117,34 @@ export default function Dashboard() {
           {report && applications.length > 0 && <p className="border-t border-zinc-100 px-5 py-3 text-[13px] text-zinc-700"><span className="font-medium">Diagnosis:</span> {report.diagnosis.headline}</p>}
         </Card>
         <Card className="xl:col-span-2">
-          <CardHeader title="Career fit" sub="Weighted skill coverage vs. demo requirement templates" right={<Link to="/fit" className="text-xs font-medium text-indigo-600">Details</Link>} />
-          <div className="space-y-4 px-5 pb-5">
-            {fit.map((r) => (
-              <div key={r.path.id}>
-                <div className="mb-1.5 flex items-center justify-between text-[13px]">
-                  <span className="font-medium text-zinc-800">{r.path.title}</span>
-                  <span className="flex items-center gap-2"><Badge tone={tierTone(r.tier)}>{r.tier}</Badge><span className="tabular w-9 text-right font-semibold">{r.score}%</span></span>
-                </div>
-                <Bar value={r.score} color={scoreColor(r.score)} />
-                <div className="mt-1 text-[11px] text-zinc-500">{r.applications} applications · {r.responded} {r.responded === 1 ? 'response' : 'responses'}</div>
-              </div>
-            ))}
-          </div>
+          <CardHeader
+            title="Career fit"
+            sub={analysis ? `${analysis.analysis.generatedBy === 'llm' ? 'AI analysis' : 'Rules-based analysis'} of your profile` : 'Analysing your profile…'}
+            right={<Link to="/fit" className="text-xs font-medium text-indigo-600">Details</Link>}
+          />
+          {analysisError && <ErrorState message={analysisError} onRetry={retryAnalysis} />}
+          {!analysis && !analysisError && <div className="space-y-4 px-5 pb-5">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-12" />)}</div>}
+          {analysis?.fallbackReason && <p className="mx-5 mb-3 rounded-md bg-amber-50 px-3 py-2 text-[11px] text-amber-800">AI analysis unavailable ({analysis.fallbackReason}); showing the rules-based analysis.</p>}
+          {analysis && fit.length === 0 && <EmptyState title="No career paths to show" hint="Add skills or experience to your profile." />}
+          {analysis && fit.length > 0 && (
+            <div className="space-y-4 px-5 pb-5">
+              {fit.map((r) => {
+                const t = tier(r.fitScore), mine = appsByPath(r.pathId)
+                return (
+                  <div key={r.pathId}>
+                    <div className="mb-1.5 flex items-center justify-between text-[13px]">
+                      <span className="font-medium text-zinc-800">{r.title}</span>
+                      <span className="flex items-center gap-2"><Badge tone={tierTone(t)}>{t}</Badge><span className="tabular w-9 text-right font-semibold">{r.fitScore}%</span></span>
+                    </div>
+                    <Bar value={r.fitScore} color={scoreColor(r.fitScore)} />
+                    <p className="mt-1.5 text-[11px] leading-snug text-zinc-500"><span className="font-medium text-emerald-700">Evidence</span> {r.evidence.slice(0, 2).map((e) => e.split(' — ')[0]).join(' · ') || '—'}</p>
+                    <p className="text-[11px] leading-snug text-zinc-500"><span className="font-medium text-rose-700">Gaps</span> {r.missingSkills.slice(0, 2).map((m) => m.skill).join(' · ') || 'None'}</p>
+                    {mine && <p className="text-[11px] text-zinc-400">{mine.applications} applications · {mine.responded} {mine.responded === 1 ? 'response' : 'responses'}</p>}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </Card>
       </div>
 

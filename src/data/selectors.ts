@@ -2,6 +2,7 @@
 import { ApplicationSchema, ExperimentSchema, OpportunitySchema, ProfileSchema } from '../types'
 import type { Application as AppView, Experiment as ExpView, Opportunity, PathId, Profile, Source } from '../types'
 import type { Db } from '../model'
+import type { CandidateInput } from '../ai/candidateSchema'
 import { DEMO_REF_DATE } from './demoDb'
 
 const PATH_TITLES: Record<PathId, string> = { da: 'data analyst', ds: 'data scientist', mle: 'ml engineer', swe: 'software engineer', pa: 'product analyst' }
@@ -71,4 +72,19 @@ export function toExperiments(db: Db, userId: string): ExpView[] {
       control: e.result?.control, variant: e.result?.variant,
     }),
   )
+}
+
+/** Candidate-analysis input for one user. `levels` overrides stored skill levels (e.g. live edits on the Profile page). */
+export function toCandidateInput(db: Db, userId: string, levels?: Record<string, number>): CandidateInput {
+  const user = db.users.find((u) => u.id === userId)!
+  const mine = db.experiences.filter((e) => e.userId === userId)
+  const shape = (e: (typeof mine)[number]) => ({ title: e.title, organization: e.organization, description: e.description, skills: e.skills, evidence: e.evidence })
+  return {
+    resume: user.resume,
+    education: { school: user.school, major: user.major, gradYear: user.gradYear, coursework: mine.filter((e) => e.kind === 'coursework').map((e) => e.title) },
+    experience: mine.flatMap((e) => (e.kind === 'work' || e.kind === 'teaching' ? [{ ...shape(e), kind: e.kind }] : [])),
+    projects: mine.filter((e) => e.kind === 'project').map(shape),
+    skills: db.skills.filter((s) => s.userId === userId).map((s) => ({ name: s.name, level: levels?.[s.name] ?? s.level, evidence: s.evidence })),
+    interests: user.interests,
+  }
 }
