@@ -1,5 +1,7 @@
 import type { Application, CareerPath, Profile, SkillReq } from '../types'
 
+/** The career paths summarised on the dashboard and in the PDF report. */
+export const FIT_PATH_IDS = ['da', 'swe', 'pa', 'mle']
 export const STAGES = ['Applications', 'Responses', 'Recruiter screens', 'Interviews', 'Final rounds'] as const
 /** Per-application label for the furthest stage reached (index = Application.reached). */
 export const STAGE_LABELS = ['Applied', 'Responded', 'Recruiter screen', 'Interview', 'Final round', 'Offer'] as const

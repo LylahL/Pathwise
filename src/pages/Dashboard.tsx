@@ -1,26 +1,21 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, BarChart3, CalendarCheck, Compass, FlaskConical, Lightbulb, MailCheck, Send, Sparkles, Target, TrendingDown } from 'lucide-react'
+import { ArrowRight, Download, BarChart3, CalendarCheck, Compass, FlaskConical, Lightbulb, MailCheck, Send, Sparkles, Target, TrendingDown } from 'lucide-react'
 import { useApp } from '../store'
-import { pct, RESPONSE_RATE_TARGET, skillStanding, tier, weekly } from '../lib/analytics'
-import { AiMark, Badge, Bar, Card, CardHeader, EmptyState, ErrorState, Kpi, LevelMeter, SectionLabel, Skeleton, Spark, scoreColor, tierTone } from '../components/ui'
+import { FIT_PATH_IDS, pct, RESPONSE_RATE_TARGET, skillStanding, tier, weekly } from '../lib/analytics'
+import { headlineParts } from '../lib/headline'
+import { AiMark, Badge, Bar, Button, Card, CardHeader, EmptyState, ErrorState, Kpi, LevelMeter, SectionLabel, Skeleton, Spark, scoreColor, tierTone } from '../components/ui'
 import FunnelChart from '../components/FunnelChart'
 import SegmentChart from '../components/SourceChart'
 import ReadinessRing from '../components/ReadinessRing'
 import InsightCard from '../components/InsightCard'
 import { careerPaths } from '../data/seed'
+import { downloadReport } from '../report/exportPdf'
 import type { Experiment } from '../types'
 
-const FIT_PATHS = ['da', 'swe', 'pa', 'mle']
-const TIER_PHRASE = { Strong: 'a strong fit for', Reachable: 'a reasonable fit for', Stretch: 'still a stretch for' } as const
-const OUTCOME_PHRASE: Record<string, string> = {
-  Responses: 'got a response', 'Recruiter screens': 'led to a recruiter screen', Interviews: 'led to an interview', 'Final rounds': 'reached a final round',
-}
+const FIT_PATHS = FIT_PATH_IDS
 const rate = (x?: { n: number; responses: number }) => (x && x.n ? x.responses / x.n : null)
-const lowerFirst = (s: string) => s.charAt(0).toLowerCase() + s.slice(1)
-
-const Em = ({ tone, children }: { tone: 'good' | 'bad' | 'accent'; children: React.ReactNode }) => (
-  <span className={tone === 'good' ? 'text-emerald-600' : tone === 'bad' ? 'text-rose-600' : 'text-indigo-600'}>{children}</span>
-)
+const HEADLINE_TONE = { good: 'text-emerald-600', bad: 'text-rose-600', accent: 'text-indigo-600', muted: 'text-zinc-400' } as const
 
 function Meter({ label, value, color }: { label: string; value: number; color: string }) {
   return (
@@ -66,16 +61,36 @@ export default function Dashboard() {
   const { strongest, weakest } = skillStanding(profile, careerPaths.filter((p) => FIT_PATHS.includes(p.id)))
   const outcomes = [...experiments, ...proposals].slice(0, 4)
   const nba = report?.nextBestAction
-  const top = ranked[0], topTier = tier(top.score)
+  const top = ranked[0]
   const drop = report?.diagnosis.transitions.find((t) => `${t.from} → ${t.to}` === report.diagnosis.breakpoint)
+  const [pdf, setPdf] = useState<'idle' | 'working' | 'error'>('idle')
+  async function exportPdf() {
+    if (!report) return
+    setPdf('working')
+    try {
+      await downloadReport({ profile, applications, summary, readiness, ranked, report, analysis: analysis?.analysis, experiments: [...experiments, ...proposals], paths: careerPaths, isDemo: true, generatedAt: new Date() })
+      setPdf('idle')
+    } catch (e) {
+      console.error('[report] PDF export failed:', e)
+      setPdf('error')
+    }
+  }
   const rateTone = summary.responseRate >= RESPONSE_RATE_TARGET ? 'good' : summary.responseRate >= RESPONSE_RATE_TARGET / 2 ? 'warn' : 'bad'
 
   return (
     <>
       {/* The 10-second answer: where you fit, where it breaks, what to do. */}
       <header className="mb-9">
-        <div className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-600">
-          Welcome back, {profile.name.split(' ')[0]} <Badge tone="warn">Demo data</Badge>
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-indigo-600">
+            Welcome back, {profile.name.split(' ')[0]} <Badge tone="warn">Demo data</Badge>
+          </div>
+          <div className="flex items-center gap-3">
+            {pdf === 'error' && <span role="alert" className="text-xs text-rose-600">Couldn’t create the PDF. Try again.</span>}
+            <Button variant="ghost" onClick={() => void exportPdf()} disabled={!report || pdf === 'working'}>
+              <Download size={13} /> {pdf === 'working' ? 'Preparing PDF…' : 'Export PDF'}
+            </Button>
+          </div>
         </div>
         {applications.length === 0 ? (
           <h1 className="max-w-3xl text-[26px] font-semibold leading-tight text-zinc-900 sm:text-[30px]">Add your applications to see where your search breaks.</h1>
@@ -83,10 +98,7 @@ export default function Dashboard() {
           <div className="space-y-3" aria-busy="true" aria-label="Analysing your search"><Skeleton className="h-8 w-full max-w-3xl" /><Skeleton className="h-8 w-2/3 max-w-xl" /></div>
         ) : (
           <h1 className="max-w-4xl text-[26px] font-semibold leading-[1.28] text-zinc-900 sm:text-[30px]">
-            {topTier === 'Stretch' ? 'Your closest fit is ' : 'You’re '}
-            <Em tone="good">{topTier === 'Stretch' ? top.path.title : `${TIER_PHRASE[topTier]} ${top.path.title}`} ({top.score}%)</Em>
-            {drop ? <>, {topTier === 'Stretch' ? 'and' : 'but'} <Em tone="bad">only {drop.converted} of {drop.n} {drop.from.toLowerCase()} {OUTCOME_PHRASE[drop.to] ?? `reached ${drop.to.toLowerCase()}`}</Em>.</> : '.'}
-            {nba && <span className="text-zinc-400"> Next: <Em tone="accent">{lowerFirst(nba.title)}</Em>.</span>}
+            {headlineParts({ title: top.path.title, score: top.score }, drop, nba?.title).map((p, i) => <span key={i} className={p.tone ? HEADLINE_TONE[p.tone] : undefined}>{p.text}</span>)}
           </h1>
         )}
         <nav className="mt-5 flex flex-wrap gap-2 text-xs" aria-label="Sections">
